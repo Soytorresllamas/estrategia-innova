@@ -347,6 +347,13 @@
   .owner-add input{ flex:1 1 auto; min-width:0; }
   .owner-add .btn{ font-size:14px; padding:6px 10px; white-space:nowrap; }
 
+  /* ---------- dependencias (#4) ---------- */
+  .deps-chips{ display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+  .depchip{ display:inline-flex; align-items:center; gap:6px; font-size:13.5px; background:var(--accent-wash);
+    color:var(--accent-ink); border:1px solid color-mix(in srgb, var(--accent) 30%, white); border-radius:999px; padding:3px 6px 3px 11px; }
+  .depchip button{ border:none; background:none; cursor:pointer; color:var(--accent-ink); font-size:13px; line-height:1; padding:0 2px; }
+  .depchip button:hover{ color:#b3402f; }
+
   /* ---------- responsive (#6) ---------- */
   @media (max-width: 860px){
     .mast h1{ font-size: clamp(1.35rem, 1.1rem + 1vw, 1.8rem); }
@@ -626,7 +633,7 @@ function Seg({ value, onChange, options }){
   );
 }
 
-function Drawer({ task, owners, onAddOwner, onChange, onClose, onDelete }){
+function Drawer({ task, owners, onAddOwner, depsOn, taskList, onChange, onClose, onDelete }){
   const [addingOwner, setAddingOwner] = useState(false);
   const [newOwner, setNewOwner] = useState("");
   const start = parse(task.start), end = parse(task.end);
@@ -718,6 +725,29 @@ function Drawer({ task, owners, onAddOwner, onChange, onClose, onDelete }){
             <input type="checkbox" checked={task.milestone} onChange={e=>set("milestone", e.target.checked)} />
             Marcar como hito (punto en el tiempo)
           </label>
+          {depsOn && (
+            <div className="field">
+              <label>Depende de</label>
+              {(task.dependsOn||[]).length > 0 && (
+                <div className="deps-chips">
+                  {(task.dependsOn||[]).map(pid=>{
+                    const p = taskList.find(tt=>tt.id===pid);
+                    return (
+                      <span className="depchip" key={pid}>{p ? p.name : pid}
+                        <button type="button" aria-label="Quitar dependencia"
+                          onClick={()=>set("dependsOn", (task.dependsOn||[]).filter(d=>d!==pid))}>✕</button>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+              <select value="" onChange={e=>{ if(e.target.value) set("dependsOn", [...(task.dependsOn||[]), e.target.value]); }}>
+                <option value="">+ Agregar dependencia…</option>
+                {taskList.filter(tt => tt.id!==task.id && !(task.dependsOn||[]).includes(tt.id))
+                  .map(tt => <option key={tt.id} value={tt.id}>{tt.name}</option>)}
+              </select>
+            </div>
+          )}
         </div>
         <footer>
           <button className="btn danger" onClick={()=>onDelete(task.id)}>Eliminar</button>
@@ -738,6 +768,7 @@ function App({ authUser, onLogout }){
   const [zoom, setZoom] = useState((_local && _local.config && _local.config.zoom) || "mes");
   const [owners, setOwners] = useState(() =>
     (_local && _local.config && _local.config.owners) || [...new Set(_seed0.map(t => t.owner).filter(Boolean))].sort());
+  const [depsOn, setDepsOn] = useState((_local && _local.config && _local.config.depsOn) || false); // #4 modo dependencias
   const [query, setQuery] = useState("");
   const [statusF, setStatusF] = useState(()=> new Set());
   const [onlyNew, setOnlyNew] = useState(false);
@@ -768,11 +799,12 @@ function App({ authUser, onLogout }){
         const cfg = res.data.config || {};
         if(cfg.groupBy) setGroupBy(cfg.groupBy);
         if(cfg.zoom) setZoom(cfg.zoom);
+        if(typeof cfg.depsOn === "boolean") setDepsOn(cfg.depsOn);
         setOwners(cfg.owners && cfg.owners.length ? cfg.owners
           : [...new Set(res.data.tasks.map(t=>t.owner).filter(Boolean))].sort());
         setSync("synced");
       } else if(res.ok && !res.data){
-        const up = await saveRemote({ tasks, config:{ groupBy, zoom, owners } });
+        const up = await saveRemote({ tasks, config:{ groupBy, zoom, owners, depsOn } });
         setSync(up.ok ? "synced" : "error");
       } else {
         console.warn("Supabase no disponible:", res.error);
@@ -785,7 +817,7 @@ function App({ authUser, onLogout }){
 
   /* guardar: siempre a local; a Supabase (con debounce) tras la hidratación */
   useEffect(()=>{
-    const state = { tasks, config:{ groupBy, zoom, owners } };
+    const state = { tasks, config:{ groupBy, zoom, owners, depsOn } };
     saveLocal(state);
     if(!sb || !hydrated.current) return;
     let cancelled = false;
@@ -795,7 +827,7 @@ function App({ authUser, onLogout }){
       if(!cancelled) setSync(up.ok ? "synced" : "error");
     }, 600);
     return ()=>{ cancelled = true; clearTimeout(h); };
-  }, [tasks, groupBy, zoom, owners]);
+  }, [tasks, groupBy, zoom, owners, depsOn]);
 
   const flash = (m)=>{ setToast(m); setTimeout(()=> setToast(null), 1900); };
 
@@ -811,6 +843,7 @@ function App({ authUser, onLogout }){
           const cfg = res.data.config || {};
           if(cfg.groupBy) setGroupBy(cfg.groupBy);
           if(cfg.zoom) setZoom(cfg.zoom);
+          if(typeof cfg.depsOn === "boolean") setDepsOn(cfg.depsOn);
           if(cfg.owners && cfg.owners.length) setOwners(cfg.owners);
           flash("Actualizado con los últimos cambios");
         }
@@ -895,6 +928,42 @@ function App({ authUser, onLogout }){
       return { key:k, label, color, items, min, max };
     }).filter(Boolean);
   }, [visible, groupBy]);
+
+  /* #4 — geometría de cada barra visible (para dibujar las flechas de dependencia) */
+  const depLayout = useMemo(()=>{
+    if(!depsOn) return null;
+    const cs = getComputedStyle(document.documentElement);
+    const HEAD = parseFloat(cs.getPropertyValue("--headH")) || 60;
+    const ROW = parseFloat(cs.getPropertyValue("--rowH")) || 50;
+    const GRP = 46;
+    const map = {}; let y = HEAD;
+    groups.forEach(g=>{
+      y += GRP;
+      if(collapsed.has(g.key)) return;
+      g.items.forEach(tk=>{
+        const s = parse(tk.start), e = parse(tk.end);
+        const cy = y + ROW/2;
+        if(tk.milestone){ const mx = x(s); map[tk.id] = { cy, sx: mx-9, ex: mx+9 }; }
+        else { const left = x(s); const w = Math.max((diffDays(s,e)+1)*ppd, 10); map[tk.id] = { cy, sx: left, ex: left+w }; }
+        y += ROW;
+      });
+    });
+    return { map, height: y };
+  }, [depsOn, groups, collapsed, ppd, x]);
+
+  const depArrows = useMemo(()=>{
+    if(!depLayout) return [];
+    const out = [];
+    groups.forEach(g => g.items.forEach(tk=>{
+      if(!Array.isArray(tk.dependsOn) || !tk.dependsOn.length) return;
+      const b = depLayout.map[tk.id]; if(!b) return;
+      tk.dependsOn.forEach(pid=>{
+        const a = depLayout.map[pid]; if(!a) return;
+        out.push({ key: pid + ">" + tk.id, ax:a.ex, ay:a.cy, bx:b.sx, by:b.cy });
+      });
+    }));
+    return out;
+  }, [depLayout, groups]);
 
   /* KPIs (over ALL tasks) */
   const kpi = useMemo(()=>{
@@ -1074,6 +1143,10 @@ function App({ authUser, onLogout }){
         <Seg value={groupBy} onChange={setGroupBy} options={[{v:"nivel",l:"Nivel ROI"},{v:"canal",l:"Canal"}]} />
         <span className="label">Zoom</span>
         <Seg value={zoom} onChange={setZoom} options={[{v:"trimestre",l:"Trim."},{v:"mes",l:"Mes"},{v:"semana",l:"Sem."}]} />
+        <button className="chip" aria-pressed={depsOn} onClick={()=>setDepsOn(v=>!v)} title="Mostrar u ocultar dependencias entre acciones (con / sin)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 7v6a3 3 0 0 0 3 3h6"/><path d="m13 13 4 3-4 3"/></svg>
+          Dependencias
+        </button>
         <button className="chip" aria-pressed={onlyNew} onClick={()=>setOnlyNew(v=>!v)}>
           <span className="sw" style={{background:"var(--accent)"}}/> Solo ideas nuevas
         </button>
@@ -1221,6 +1294,20 @@ function App({ authUser, onLogout }){
               </React.Fragment>
             );
           })}
+          {depsOn && depLayout && depArrows.length > 0 && (
+            <svg className="deparrows" width={width} height={depLayout.height}
+              style={{ position:"absolute", left:"var(--leftW)", top:0, pointerEvents:"none", zIndex:4, overflow:"visible" }}>
+              <defs>
+                <marker id="depah" markerWidth="8" markerHeight="8" refX="6.5" refY="3" orient="auto">
+                  <path d="M0,0 L6.5,3 L0,6 Z" fill="#b85c3f" />
+                </marker>
+              </defs>
+              {depArrows.map(a => (
+                <path key={a.key} d={`M ${a.ax} ${a.ay} H ${a.ax + 8} V ${a.by} H ${a.bx}`}
+                  fill="none" stroke="#b85c3f" strokeWidth="1.6" strokeOpacity="0.85" markerEnd="url(#depah)" />
+              ))}
+            </svg>
+          )}
         </div>
       </div>
 
@@ -1235,7 +1322,7 @@ function App({ authUser, onLogout }){
         <button className="btn danger-ghost" onClick={()=>setResetOpen(true)}>Restablecer plan original</button>
       </div>
 
-      {sel && <Drawer key={sel.id} task={sel} owners={owners} onAddOwner={addOwner} onChange={patch} onClose={closeDrawer} onDelete={del} />}
+      {sel && <Drawer key={sel.id} task={sel} owners={owners} onAddOwner={addOwner} depsOn={depsOn} taskList={tasks} onChange={patch} onClose={closeDrawer} onDelete={del} />}
       {resetOpen && <ResetModal onClose={()=>setResetOpen(false)} onConfirm={doReset} />}
       {toast && <div className="toast">{toast}</div>}
     </div>
