@@ -25,6 +25,12 @@ Formato inspirado en [Keep a Changelog](https://keepachangelog.com/es/).
 - **Acceso a la app:** pantalla de login con usuarios **Alejandro** y
   **Ricardo** (contraseña guardada como hash SHA-256 en `index.html`, no en
   texto plano). Es un candado ligero del lado del cliente, no seguridad fuerte.
+- **Tablero de pruebas (staging):** abrir la app con **`?board=staging`**
+  (ej. `…/estrategia-innova/?board=staging`) usa una fila aislada
+  `innova-staging` con su propio caché local y muestra un distintivo amarillo.
+  Sirve para probar sin tocar los datos reales (`innova-default`). Para
+  re-clonar staging desde prod, copiar el `data` de `innova-default` a
+  `innova-staging` con un `UPDATE` (o reusar el script de respaldo).
 - **Archivo principal:** `index.html` (autocontenido: React + Babel + supabase-js por CDN).
 
 ---

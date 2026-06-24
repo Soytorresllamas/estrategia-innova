@@ -99,6 +99,8 @@
   .mast .meta{ text-align:right; color:var(--ink-3); font-family:"Spline Sans Mono", monospace;
     font-size:14.4px; line-height:1.7; letter-spacing:0.02em; }
   .mast .meta b{ color:var(--ink-2); font-weight:500; }
+  .stagingbadge{ display:inline-block; margin-left:10px; font-size:12.5px; font-weight:600;
+    color:#7a4f00; background:#fbe6c2; border:1px solid #e6b85c; border-radius:999px; padding:2px 10px; vertical-align:middle; }
 
   /* ---------- kpi strip ---------- */
   .kpis{ display:flex; align-items:center; gap:0; flex-wrap:wrap; margin:18px 0 14px;
@@ -515,13 +517,15 @@ const SEED = [
 /* ----------------------------- persistence (Supabase + local) ----------------------------- */
 const SUPABASE_URL = "https://siwiluoxrjnqjnrufbjl.supabase.co";
 const SUPABASE_KEY = "sb_publishable_eB75esPUCuPUkMyYD_df1A_uwhUVp9E";
-const ROW_ID = "innova-default";          // un solo tablero compartido
+// ?board=staging usa una fila AISLADA para pruebas; por defecto, los datos reales.
+const BOARD = (new URLSearchParams(window.location.search).get("board") === "staging") ? "staging" : "prod";
+const ROW_ID = BOARD === "staging" ? "innova-staging" : "innova-default";
 const TABLE = "gantt_state";
 const sb = (window.supabase && window.supabase.createClient)
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } })
   : null;
 
-const LS_KEY = "gantt-innova-v1";
+const LS_KEY = BOARD === "staging" ? "gantt-innova-staging" : "gantt-innova-v1";
 // Devuelve { tasks, config } desde localStorage; migra el formato viejo (array suelto).
 const loadLocal = () => {
   try {
@@ -1109,7 +1113,7 @@ function App({ authUser, onLogout }){
         <div className="id">
           <img className="logo" src="hotmarketing-logo.png" alt="Hotmarketing — Marketing Estratégico de Alto Nivel" />
           <h1>Estrategia de Marketing</h1>
-          <div className="sub">Roadmap maestro 2026</div>
+          <div className="sub">Roadmap maestro 2026{BOARD === "staging" && <span className="stagingbadge">⚙ Tablero de pruebas · staging</span>}</div>
         </div>
         <div className="meta">
           <span className="userbar"><span className="udot"/>{DISPLAY[authUser] || authUser} · <button className="linkbtn" onClick={onLogout}>Salir</button></span><br/>
