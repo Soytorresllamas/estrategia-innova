@@ -10,7 +10,7 @@
   ------------------------------------------------------------------
   SUPUESTOS (editables todos dentro de la herramienta):
   - El único bloque con fechas duras en el documento es el Plan Maestro
-    de 4 semanas (Open House Cluster Borgoña, 24-jun → 19-jul 2026).
+    de 4 semanas (Open House Cluster Borgoña, 24-jul → 19-ago 2026).
   - Los Niveles 1–5 del Plan de Acción están priorizados por ROI, NO por
     fecha. Aquí se les asignó una ventana sugerida derivada de su prioridad
     (N1 inmediato, N2–N3 trimestres siguientes, etc.). Ajusta arrastrando.
@@ -161,8 +161,13 @@
   .head{ position:sticky; top:0; display:flex; z-index:var(--z-head); height:var(--headH); }
   .head .corner{ position:sticky; left:0; z-index:var(--z-corner); width:var(--leftW); flex:0 0 var(--leftW);
     background:var(--surface); border-right:1px solid var(--line-2); border-bottom:1px solid var(--line-2);
-    display:flex; align-items:flex-end; padding:0 16px 9px; }
+    display:flex; align-items:flex-end; gap:9px; padding:0 16px 9px; }
   .head .corner span{ font-size:13.75px; color:var(--ink-3); text-transform:uppercase; letter-spacing:0.08em; }
+  .foldall{ display:flex; align-items:center; justify-content:center; width:28px; height:24px; padding:0;
+    border:1px solid var(--line-2); border-radius:7px; background:var(--surface); color:var(--ink-2); cursor:pointer;
+    transition: background .12s var(--ease), color .12s, border-color .12s; }
+  .foldall:hover{ background:var(--surface-2); color:var(--ink); border-color:var(--line-2); }
+  .foldall:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; }
   .head .timehead{ position:relative; border-bottom:1px solid var(--line-2); background:var(--surface); }
   .month{ position:absolute; top:0; bottom:0; border-left:1px solid var(--line); display:flex; flex-direction:column;
     justify-content:flex-end; padding:0 0 8px 9px; }
@@ -396,59 +401,59 @@ const t = (id,name,detail,nivel,canal,start,end,opt={}) => ({
 
 const SEED = [
   // -------- Sprint Open House (fechas reales) --------
-  t("sp1","Activación digital","Video «tour privado» del Cluster Borgoña en Meta + LinkedIn. Pauta $8,000 MXN.","sprint","Publicidad Pagada","2026-06-24","2026-06-27",{progress:60,status:"doing",owner:"Equipo Digital"}),
-  t("sp2","Alianzas express","Confirmar 3–5 marcas de lujo (Porsche, Vuitton, Clinique La Prairie) para difundir.","sprint","Partnerships","2026-06-24","2026-06-30",{progress:40,status:"doing",owner:"Alianzas"}),
-  t("sp3","WhatsApp VIP","Mensaje personalizado a los 300 clientes con invitación exclusiva y código de acceso.","sprint","E-Marketing","2026-06-28","2026-06-30",{progress:10,status:"doing",owner:"Equipo Asesores"}),
-  t("sp4","Invitaciones físicas","Tarjeta premium con QR al video. Entrega en restaurantes y consultorios A+.","sprint","Eventos","2026-07-01","2026-07-07",{owner:"Dirección MKT"}),
-  t("sp5","Brief a brokers","Brief a 50 brokers con comisión especial de cierre. Solo casas Borgoña.","sprint","Venta Personal","2026-07-01","2026-07-05",{owner:"Erika Valadez"}),
-  t("sp6","Contenido de asesores","Cada asesor publica reels «¿Por qué vivir en Borgoña?» en sus cuentas.","sprint","Influencer & Content","2026-07-03","2026-07-07",{owner:"Contenido"}),
-  t("sp7","Retargeting digital","Audiencia que vio el video >50%. Anuncio: «Últimas unidades con entrega inmediata».","sprint","Publicidad Pagada","2026-07-08","2026-07-14",{owner:"Equipo Digital"}),
-  t("sp8","Confirmaciones CRM","Llamada personal de cada asesor a sus prospectos calificados en el CRM.","sprint","Venta Personal","2026-07-08","2026-07-14",{owner:"Equipo Asesores"}),
-  t("sp9","PR del evento","Nota editorial en Maxwell + Instagram Stories con cuenta regresiva.","sprint","Relaciones Públicas","2026-07-10","2026-07-14",{owner:"Agencia PR"}),
-  t("sp10","Experiencia Open House","Catering de autor, música en vivo, tour guiado por casa modelo. No feria: experiencia.","sprint","Eventos","2026-07-18","2026-07-19",{owner:"Dirección MKT"}),
-  t("sp11","Cierre en sitio","Mesa de preventas con condiciones especiales válidas solo durante el evento.","sprint","Venta Personal","2026-07-18","2026-07-19",{owner:"Equipo Asesores"}),
-  t("sp12","Seguimiento 24h","Email + WhatsApp personalizado a cada asistente en las primeras 24 horas.","sprint","E-Marketing","2026-07-19","2026-07-20",{owner:"Equipo Asesores"}),
+  t("sp1","Activación digital","Video «tour privado» del Cluster Borgoña en Meta + LinkedIn. Pauta $8,000 MXN.","sprint","Publicidad Pagada","2026-07-24","2026-07-27",{progress:60,status:"doing",owner:"Equipo Digital"}),
+  t("sp2","Alianzas express","Confirmar 3–5 marcas de lujo (Porsche, Vuitton, Clinique La Prairie) para difundir.","sprint","Partnerships","2026-07-24","2026-07-30",{progress:40,status:"doing",owner:"Alianzas"}),
+  t("sp3","WhatsApp VIP","Mensaje personalizado a los 300 clientes con invitación exclusiva y código de acceso.","sprint","E-Marketing","2026-07-28","2026-07-30",{progress:10,status:"doing",owner:"Equipo Asesores"}),
+  t("sp4","Invitaciones físicas","Tarjeta premium con QR al video. Entrega en restaurantes y consultorios A+.","sprint","Eventos","2026-08-01","2026-08-07",{owner:"Dirección MKT"}),
+  t("sp5","Brief a brokers","Brief a 50 brokers con comisión especial de cierre. Solo casas Borgoña.","sprint","Venta Personal","2026-08-01","2026-08-05",{owner:"Erika Valadez"}),
+  t("sp6","Contenido de asesores","Cada asesor publica reels «¿Por qué vivir en Borgoña?» en sus cuentas.","sprint","Influencer & Content","2026-08-03","2026-08-07",{owner:"Contenido"}),
+  t("sp7","Retargeting digital","Audiencia que vio el video >50%. Anuncio: «Últimas unidades con entrega inmediata».","sprint","Publicidad Pagada","2026-08-08","2026-08-14",{owner:"Equipo Digital"}),
+  t("sp8","Confirmaciones CRM","Llamada personal de cada asesor a sus prospectos calificados en el CRM.","sprint","Venta Personal","2026-08-08","2026-08-14",{owner:"Equipo Asesores"}),
+  t("sp9","PR del evento","Nota editorial en Maxwell + Instagram Stories con cuenta regresiva.","sprint","Relaciones Públicas","2026-08-10","2026-08-14",{owner:"Agencia PR"}),
+  t("sp10","Experiencia Open House","Catering de autor, música en vivo, tour guiado por casa modelo. No feria: experiencia.","sprint","Eventos","2026-08-18","2026-08-19",{owner:"Dirección MKT"}),
+  t("sp11","Cierre en sitio","Mesa de preventas con condiciones especiales válidas solo durante el evento.","sprint","Venta Personal","2026-08-18","2026-08-19",{owner:"Equipo Asesores"}),
+  t("sp12","Seguimiento 24h","Email + WhatsApp personalizado a cada asistente en las primeras 24 horas.","sprint","E-Marketing","2026-08-19","2026-08-20",{owner:"Equipo Asesores"}),
 
   // -------- Nivel 1 --------
-  t("n1a","Alianzas con marcas de lujo — eventos en residencias","Llevar al prospecto correcto a la propiedad. Las casas se venden solas.","1","Partnerships","2026-07-20","2026-09-15",{owner:"Alianzas"}),
-  t("n1b","Evento Cayetana Álvarez de Toledo + patrocinadores","Branding de primer nivel. Clave: curar la lista de asistentes, no solo llenar el salón.","1","Eventos","2026-08-15","2026-09-30",{owner:"Dirección MKT"}),
-  t("n1c","Cena maridaje de alta curaduría (Argentilia)","Que paguen los invitados crea filtro automático de calificación y eleva la percepción.","1","Eventos","2026-07-25","2026-08-10",{owner:"Eventos"}),
-  t("n1d","Private sales concierge para UHNWI","Perfil senior, acceso solo por referencia. Sin publicidad. Patrimonio $50M+.","1","Venta Personal","2026-07-15","2026-08-31",{nuevo:true,owner:"Dirección MKT"}),
-  t("n1e","Alianza con family offices y gestoras de patrimonio","Fideapunt, HSBC Premier, GF Bajío. El asesor financiero recomienda Innova como activo alternativo.","1","Partnerships","2026-07-20","2026-09-30",{nuevo:true,owner:"Alianzas"}),
-  t("n1f","Open House Cluster Borgoña","Entrega inmediata = argumento de cierre. Urgencia real. Tráfico cualificado, no masivo.","1","Eventos","2026-07-18","2026-07-18",{milestone:true,owner:"Dirección MKT"}),
+  t("n1a","Alianzas con marcas de lujo — eventos en residencias","Llevar al prospecto correcto a la propiedad. Las casas se venden solas.","1","Partnerships","2026-08-20","2026-10-15",{owner:"Alianzas"}),
+  t("n1b","Evento Cayetana Álvarez de Toledo + patrocinadores","Branding de primer nivel. Clave: curar la lista de asistentes, no solo llenar el salón.","1","Eventos","2026-09-15","2026-10-30",{owner:"Dirección MKT"}),
+  t("n1c","Cena maridaje de alta curaduría (Argentilia)","Que paguen los invitados crea filtro automático de calificación y eleva la percepción.","1","Eventos","2026-08-25","2026-09-10",{owner:"Eventos"}),
+  t("n1d","Private sales concierge para UHNWI","Perfil senior, acceso solo por referencia. Sin publicidad. Patrimonio $50M+.","1","Venta Personal","2026-08-15","2026-09-30",{nuevo:true,owner:"Dirección MKT"}),
+  t("n1e","Alianza con family offices y gestoras de patrimonio","Fideapunt, HSBC Premier, GF Bajío. El asesor financiero recomienda Innova como activo alternativo.","1","Partnerships","2026-08-20","2026-10-30",{nuevo:true,owner:"Alianzas"}),
+  t("n1f","Open House Cluster Borgoña","Entrega inmediata = argumento de cierre. Urgencia real. Tráfico cualificado, no masivo.","1","Eventos","2026-08-18","2026-08-18",{milestone:true,owner:"Dirección MKT"}),
 
   // -------- Nivel 2 --------
-  t("n2a","Concierto Orquesta de Cámara (300 clientes + invitados)","Cada cliente trae una pareja = 300 prospectos en contexto emocional. Sep 2026.","2","Eventos","2026-09-01","2026-09-30",{owner:"Dirección MKT"}),
-  t("n2b","Fashion Fest con Palacio de Hierro + 700 COPARMEX","Lifestyle + empresarios nacionales. La experiencia debe ocurrir dentro del fraccionamiento.","2","Eventos","2026-10-01","2026-11-15",{owner:"Dirección MKT"}),
-  t("n2c","Programa de referidos con comisión (clientes actuales)","300 compradores son embajadores naturales. Comisión 1% sobre venta: $65K–$125K.","2","Publicidad Orgánica","2026-09-01","2026-10-15",{nuevo:true,owner:"Equipo Asesores"}),
-  t("n2d","Alianza con notarios y abogados corporativos","Conocen a quién vendió empresa o recibió herencia: el comprador natural de $10M+.","2","Partnerships","2026-09-15","2026-11-30",{nuevo:true,owner:"Alianzas"}),
-  t("n2e","Desayuno con inversionistas Actinver (50% Innova)","Posicionar Innova como activo de inversión. Argumentos de plusvalía y nearshoring.","2","Partnerships","2026-10-05","2026-10-20",{owner:"Alianzas"}),
-  t("n2f","Red de 50 brokers — enlace Erika Valadez","Los brokers externos aportan prospectos que Innova no alcanza directamente.","2","Venta Personal","2026-09-01","2026-12-15",{owner:"Erika Valadez"}),
-  t("n2g","Club de inversionistas trimestral (20 máx.)","Plusvalía real vs. otros activos. Los clientes traen a sus socios de negocio.","2","Eventos","2026-10-01","2026-12-31",{nuevo:true,owner:"Dirección MKT"}),
-  t("n2h","Revista Maxwell — 32 páginas editoriales","Ampliar distribución: lounges VIP, aviación privada y clubs de golf.","2","Influencer & Content","2026-09-10","2026-11-10",{owner:"Contenido"}),
+  t("n2a","Concierto Orquesta de Cámara (300 clientes + invitados)","Cada cliente trae una pareja = 300 prospectos en contexto emocional. Oct 2026.","2","Eventos","2026-10-01","2026-10-30",{owner:"Dirección MKT"}),
+  t("n2b","Fashion Fest con Palacio de Hierro + 700 COPARMEX","Lifestyle + empresarios nacionales. La experiencia debe ocurrir dentro del fraccionamiento.","2","Eventos","2026-11-01","2026-12-15",{owner:"Dirección MKT"}),
+  t("n2c","Programa de referidos con comisión (clientes actuales)","300 compradores son embajadores naturales. Comisión 1% sobre venta: $65K–$125K.","2","Publicidad Orgánica","2026-10-01","2026-11-15",{nuevo:true,owner:"Equipo Asesores"}),
+  t("n2d","Alianza con notarios y abogados corporativos","Conocen a quién vendió empresa o recibió herencia: el comprador natural de $10M+.","2","Partnerships","2026-10-15","2026-12-30",{nuevo:true,owner:"Alianzas"}),
+  t("n2e","Desayuno con inversionistas Actinver (50% Innova)","Posicionar Innova como activo de inversión. Argumentos de plusvalía y nearshoring.","2","Partnerships","2026-11-05","2026-11-20",{owner:"Alianzas"}),
+  t("n2f","Red de 50 brokers — enlace Erika Valadez","Los brokers externos aportan prospectos que Innova no alcanza directamente.","2","Venta Personal","2026-10-01","2027-01-15",{owner:"Erika Valadez"}),
+  t("n2g","Club de inversionistas trimestral (20 máx.)","Plusvalía real vs. otros activos. Los clientes traen a sus socios de negocio.","2","Eventos","2026-11-01","2027-01-31",{nuevo:true,owner:"Dirección MKT"}),
+  t("n2h","Revista Maxwell — 32 páginas editoriales","Ampliar distribución: lounges VIP, aviación privada y clubs de golf.","2","Influencer & Content","2026-10-10","2026-12-10",{owner:"Contenido"}),
 
   // -------- Nivel 3 --------
-  t("n3a","LinkedIn Ads: directores y dueños CDMX/MTY/GDL","Filtros: C-level, empresa 50+ empleados, manufactura y finanzas. Prospecto 10× más calificado que Meta.","3","Publicidad Pagada","2026-10-01","2027-01-31",{nuevo:true,owner:"Equipo Digital"}),
-  t("n3b","Thought leadership en LinkedIn (asesores como expertos)","Los asesores publican análisis de inversión inmobiliaria. Atrae al inversionista que ya investiga.","3","Publicidad Orgánica","2026-10-15","2027-02-28",{owner:"Contenido"}),
-  t("n3c","Campaña nacional en redes CDMX + MTY + GDL","Video testimonial de compradores reales. La autenticidad supera la producción costosa.","3","Publicidad Pagada","2026-11-01","2027-01-31",{owner:"Equipo Digital"}),
-  t("n3d","Podcast / serie «Invertir en México desde México»","Plusvalía, nearshoring en el Bajío y lifestyle. Invitados: economistas y empresarios.","3","Influencer & Content","2026-11-15","2027-02-28",{owner:"Contenido"}),
-  t("n3e","Espectaculares CDMX y MTY — expansión planeada","Santa Fe, Polanco, San Pedro. Una imagen, cero texto, QR al video.","3","Publicidad Pagada","2026-12-01","2027-02-15",{owner:"Equipo Digital"}),
-  t("n3f","Alianza con aviación privada — FBO y lounges","Libro de arte + QR en Signature FBO León/Silao, NetJets México, aeropuertos Toluca y MTY.","3","Partnerships","2026-10-20","2026-12-31",{nuevo:true,owner:"Alianzas"}),
+  t("n3a","LinkedIn Ads: directores y dueños CDMX/MTY/GDL","Filtros: C-level, empresa 50+ empleados, manufactura y finanzas. Prospecto 10× más calificado que Meta.","3","Publicidad Pagada","2026-11-01","2027-02-28",{nuevo:true,owner:"Equipo Digital"}),
+  t("n3b","Thought leadership en LinkedIn (asesores como expertos)","Los asesores publican análisis de inversión inmobiliaria. Atrae al inversionista que ya investiga.","3","Publicidad Orgánica","2026-11-15","2027-03-28",{owner:"Contenido"}),
+  t("n3c","Campaña nacional en redes CDMX + MTY + GDL","Video testimonial de compradores reales. La autenticidad supera la producción costosa.","3","Publicidad Pagada","2026-12-01","2027-02-28",{owner:"Equipo Digital"}),
+  t("n3d","Podcast / serie «Invertir en México desde México»","Plusvalía, nearshoring en el Bajío y lifestyle. Invitados: economistas y empresarios.","3","Influencer & Content","2026-12-15","2027-03-28",{owner:"Contenido"}),
+  t("n3e","Espectaculares CDMX y MTY — expansión planeada","Santa Fe, Polanco, San Pedro. Una imagen, cero texto, QR al video.","3","Publicidad Pagada","2027-01-01","2027-03-15",{owner:"Equipo Digital"}),
+  t("n3f","Alianza con aviación privada — FBO y lounges","Libro de arte + QR en Signature FBO León/Silao, NetJets México, aeropuertos Toluca y MTY.","3","Partnerships","2026-11-20","2027-01-31",{nuevo:true,owner:"Alianzas"}),
 
   // -------- Nivel 4 --------
-  t("n4a","Torneo de Golf COPARMEX en El Bosque","Tee sponsor con experiencia de preventa en hoyo 9. Conversaciones naturales de inversión.","4","Eventos","2026-10-10","2026-10-25",{owner:"Eventos"}),
-  t("n4b","Evento mujeres inversionistas — Lagos de Moreno","Las mujeres toman el 70% de las decisiones de compra. Experiencia sensorial en La Campiña.","4","Eventos","2026-09-20","2026-10-10",{owner:"Dirección MKT"}),
-  t("n4c","Evento Moms con Paulina Rivera (15K)","Comisión por resultado. Filtrar la capacidad económica real de las seguidoras.","4","Influencer & Content","2026-08-20","2026-09-10",{owner:"Contenido"}),
-  t("n4d","Alianza con clínicas estéticas y spas de lujo","Clientela con capacidad económica perfecta. Libro de arte + QR en sala de espera.","4","Partnerships","2026-09-01","2026-10-31",{owner:"Alianzas"}),
-  t("n4e","Evento macro de IA para negocios (entrada de pago)","Buen alcance. Solo si se filtra el perfil: dueños de empresa, no empleados.","4","Eventos","2026-11-01","2026-11-30",{owner:"Dirección MKT"}),
-  t("n4f","Showroom NAU en Torre Ponticelli","Excelente ubicación corporativa. Asegurar asesor presente y seguimiento inmediato.","4","Venta Personal","2026-08-15","2026-12-31",{owner:"Equipo Asesores"}),
+  t("n4a","Torneo de Golf COPARMEX en El Bosque","Tee sponsor con experiencia de preventa en hoyo 9. Conversaciones naturales de inversión.","4","Eventos","2026-11-10","2026-11-25",{owner:"Eventos"}),
+  t("n4b","Evento mujeres inversionistas — Lagos de Moreno","Las mujeres toman el 70% de las decisiones de compra. Experiencia sensorial en La Campiña.","4","Eventos","2026-10-20","2026-11-10",{owner:"Dirección MKT"}),
+  t("n4c","Evento Moms con Paulina Rivera (15K)","Comisión por resultado. Filtrar la capacidad económica real de las seguidoras.","4","Influencer & Content","2026-09-20","2026-10-10",{owner:"Contenido"}),
+  t("n4d","Alianza con clínicas estéticas y spas de lujo","Clientela con capacidad económica perfecta. Libro de arte + QR en sala de espera.","4","Partnerships","2026-10-01","2026-11-30",{owner:"Alianzas"}),
+  t("n4e","Evento macro de IA para negocios (entrada de pago)","Buen alcance. Solo si se filtra el perfil: dueños de empresa, no empleados.","4","Eventos","2026-12-01","2026-12-30",{owner:"Dirección MKT"}),
+  t("n4f","Showroom NAU en Torre Ponticelli","Excelente ubicación corporativa. Asegurar asesor presente y seguimiento inmediato.","4","Venta Personal","2026-09-15","2027-01-31",{owner:"Equipo Asesores"}),
 
   // -------- Nivel 5 (revisar / eliminar) --------
-  t("n5a","Publicidad en periódico AM","Audiencia masiva sin calificación. Reasignar presupuesto a LinkedIn Ads.","5","Publicidad Pagada","2026-07-01","2026-07-15",{status:"review",owner:"Dirección MKT"}),
-  t("n5b","Guardias esperando visitas espontáneas","Es el último eslabón, no una estrategia. Solo útil si hay tráfico activo dirigido.","5","Venta Personal","2026-07-01","2026-07-15",{status:"review",owner:"Equipo Asesores"}),
-  t("n5c","Revista Aire de Aeroméxico ($250K/página)","Costo altísimo, alcance no segmentado. Un evento privado en sala VIP genera mejores leads.","5","Publicidad Pagada","2026-07-01","2026-07-15",{status:"review",owner:"Dirección MKT"}),
-  t("n5d","Folletos impresos por asesores","El libro de arte cumple esta función de forma superior. Eliminar folletos.","5","Publicidad Pagada","2026-07-01","2026-07-15",{status:"review",owner:"Equipo Asesores"}),
-  t("n5e","Redes sociales con bajo engagement","Eventos wellness atraen público incorrecto. Migrar a lifestyle + datos de inversión.","5","Publicidad Orgánica","2026-07-01","2026-07-15",{status:"review",owner:"Contenido"}),
+  t("n5a","Publicidad en periódico AM","Audiencia masiva sin calificación. Reasignar presupuesto a LinkedIn Ads.","5","Publicidad Pagada","2026-08-01","2026-08-15",{status:"review",owner:"Dirección MKT"}),
+  t("n5b","Guardias esperando visitas espontáneas","Es el último eslabón, no una estrategia. Solo útil si hay tráfico activo dirigido.","5","Venta Personal","2026-08-01","2026-08-15",{status:"review",owner:"Equipo Asesores"}),
+  t("n5c","Revista Aire de Aeroméxico ($250K/página)","Costo altísimo, alcance no segmentado. Un evento privado en sala VIP genera mejores leads.","5","Publicidad Pagada","2026-08-01","2026-08-15",{status:"review",owner:"Dirección MKT"}),
+  t("n5d","Folletos impresos por asesores","El libro de arte cumple esta función de forma superior. Eliminar folletos.","5","Publicidad Pagada","2026-08-01","2026-08-15",{status:"review",owner:"Equipo Asesores"}),
+  t("n5e","Redes sociales con bajo engagement","Eventos wellness atraen público incorrecto. Migrar a lifestyle + datos de inversión.","5","Publicidad Orgánica","2026-08-01","2026-08-15",{status:"review",owner:"Contenido"}),
 ];
 
 /* ----------------------------- persistence (Supabase + local) ----------------------------- */
@@ -843,6 +848,9 @@ function App({ authUser, onLogout }){
   };
   const toggleStatus = (s)=> setStatusF(prev => { const n = new Set(prev); n.has(s) ? n.delete(s) : n.add(s); return n; });
   const toggleGroup = (k)=> setCollapsed(prev => { const n = new Set(prev); n.has(k) ? n.delete(k) : n.add(k); return n; });
+  const allKeys = groups.map(g => g.key);
+  const allCollapsed = allKeys.length > 0 && allKeys.every(k => collapsed.has(k));
+  const toggleAll = ()=> setCollapsed(allCollapsed ? new Set() : new Set(allKeys));
   const doReset = ()=>{ setTasks(SEED); setSelId(null); setResetOpen(false); flash("Plan restablecido"); };
 
   /* ------- export ------- */
@@ -939,7 +947,18 @@ function App({ authUser, onLogout }){
 
           {/* header */}
           <div className="head">
-            <div className="corner"><span>Acción</span></div>
+            <div className="corner">
+              <button className="foldall" onClick={toggleAll}
+                title={allCollapsed ? "Expandir todos los grupos" : "Colapsar todos los grupos"}
+                aria-label={allCollapsed ? "Expandir todo" : "Colapsar todo"}>
+                {allCollapsed ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m7 20 5-5 5 5"/><path d="m7 4 5 5 5-5"/></svg>
+                )}
+              </button>
+              <span>Acción</span>
+            </div>
             <div className="timehead" style={{ width: width }}>
               {months.map((m,i)=>(
                 <div className="month" key={i} style={{ left: x(m.ms), width: m.days*ppd }}>
