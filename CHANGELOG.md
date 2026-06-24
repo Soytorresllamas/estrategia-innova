@@ -90,14 +90,21 @@ Toda la construcción ocurrió en un día, en estos hitos:
 `git checkout <hash> -- index.html` (o clonar el repo de nuevo).
 
 **Restaurar los datos (tareas) en Supabase** desde un snapshot de `backups/`:
-1. Abrir el snapshot (`backups/gantt-state-AAAA-MM-DD.json`) y copiar el objeto `data`.
+- `backups/latest.json` = estado más reciente. `backups/gantt-state-AAAA-MM-DD.json`
+  = historial por día. **El contenido del archivo es directamente el objeto `data`**
+  (`{ config, tasks }`), listo para pegar.
+1. Abrir el snapshot que quieras restaurar y copiar todo su contenido.
 2. En Supabase → SQL Editor del proyecto `siwiluoxrjnqjnrufbjl`, ejecutar:
    ```sql
    update public.gantt_state
-   set data = '<pega-aquí-el-objeto-data-en-JSON>'::jsonb, updated_at = now()
+   set data = '<pega-aquí-el-contenido-del-archivo>'::jsonb, updated_at = now()
    where id = 'innova-default';
    ```
    (O usar el botón **Restablecer** de la app para volver al plan original de fábrica.)
+
+**Respaldo automático:** un GitHub Action (`.github/workflows/backup.yml`) corre a
+diario (09:00 UTC) y guarda un snapshot nuevo en `backups/` solo si los datos
+cambiaron. También se puede correr a mano desde la pestaña **Actions** del repo.
 
 **Generar un nuevo snapshot de respaldo** (cuando quieras):
 ```bash
