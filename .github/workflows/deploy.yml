@@ -3,6 +3,9 @@ name: Deploy static site to GitHub Pages
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'backups/**'
+      - '**/*.md'
   workflow_dispatch:
 
 permissions:
