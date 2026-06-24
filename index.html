@@ -93,7 +93,7 @@
     font-size: 16.25px; text-transform:uppercase; color:var(--accent-ink); }
   .wordmark b{ letter-spacing:0.34em; }
   .mast h1{ font-family:"Fraunces", serif; font-weight:500; letter-spacing:-0.02em;
-    font-size: clamp(2.125rem, 1.5rem + 2.25vw, 3.25rem); line-height:1.02; margin:0; text-wrap:balance; }
+    font-size: clamp(1.5rem, 1.1rem + 1.5vw, 2.2rem); line-height:1.05; margin:0; text-wrap:balance; }
   .mast .sub{ color:var(--ink-2); font-size:17.5px; max-width:54ch; line-height:1.45; }
   .mast .meta{ text-align:right; color:var(--ink-3); font-family:"Spline Sans Mono", monospace;
     font-size:14.4px; line-height:1.7; letter-spacing:0.02em; }
@@ -882,7 +882,7 @@ function App({ authUser, onLogout }){
         <div className="id">
           <img className="logo" src="hotmarketing-logo.png" alt="Hotmarketing — Marketing Estratégico de Alto Nivel" />
           <h1>Estrategia de Marketing</h1>
-          <div className="sub">Roadmap maestro 2026 — Gantt interactivo. Arrastra para reprogramar, edita cada acción y exporta tu plan.</div>
+          <div className="sub">Roadmap maestro 2026</div>
         </div>
         <div className="meta">
           <span className="userbar"><span className="udot"/>{DISPLAY[authUser] || authUser} · <button className="linkbtn" onClick={onLogout}>Salir</button></span><br/>
