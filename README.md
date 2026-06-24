@@ -41,4 +41,9 @@ El documento original solo traía fechas duras en el sprint de 4 semanas. Las fe
 
 ## Tecnología
 
-React 18 + Babel standalone + supabase-js (vía CDN), un único `index.html`. Sin servidor ni paso de compilación.
+React 18 + Babel standalone + supabase-js (vía CDN), un único `index.html`. Sin servidor ni paso de compilación. Se publica con GitHub Actions (`.github/workflows/deploy.yml`).
+
+## Respaldo e historial
+
+- **Historial de cambios:** [`CHANGELOG.md`](CHANGELOG.md) — qué cambió y por qué, con instrucciones de recuperación.
+- **Respaldos de datos:** carpeta [`backups/`](backups/) — *snapshots* JSON del estado en Supabase (las tareas en vivo), por si la base se pierde o se sobrescribe.
