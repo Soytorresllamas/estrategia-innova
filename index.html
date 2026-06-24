@@ -87,6 +87,8 @@
   .mast{ display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex-wrap:wrap;
     padding-bottom:18px; border-bottom:1px solid var(--line-2); }
   .mast .id{ display:flex; flex-direction:column; gap:6px; }
+  .logo{ height:54px; width:auto; display:block; margin-bottom:2px; }
+  .login-logo{ height:48px; width:auto; display:block; margin-bottom:6px; }
   .wordmark{ font-family:"Fraunces", serif; font-weight:600; letter-spacing:-0.02em;
     font-size: 16.25px; text-transform:uppercase; color:var(--accent-ink); }
   .wordmark b{ letter-spacing:0.34em; }
@@ -515,7 +517,7 @@ function Login({ onLogin }){
   return (
     <div className="login">
       <form className="login-card" onSubmit={submit}>
-        <div className="wordmark">Grupo <b>Innova</b></div>
+        <img className="login-logo" src="hotmarketing-logo.png" alt="Hotmarketing — Marketing Estratégico de Alto Nivel" />
         <h1>Estrategia de Marketing</h1>
         <p className="login-sub">Tablero de planeación. Ingresa tus credenciales para continuar.</p>
         <div className="login-field">
@@ -869,13 +871,13 @@ function App({ authUser, onLogout }){
     <div className="wrap">
       <div className="mast">
         <div className="id">
-          <div className="wordmark">Grupo <b>Innova</b></div>
+          <img className="logo" src="hotmarketing-logo.png" alt="Hotmarketing — Marketing Estratégico de Alto Nivel" />
           <h1>Estrategia de Marketing</h1>
           <div className="sub">Roadmap maestro 2026 — Gantt interactivo. Arrastra para reprogramar, edita cada acción y exporta tu plan.</div>
         </div>
         <div className="meta">
           <span className="userbar"><span className="udot"/>{DISPLAY[authUser] || authUser} · <button className="linkbtn" onClick={onLogout}>Salir</button></span><br/>
-          León, Guanajuato<br/>
+          Grupo Innova · León, GTO<br/>
           <b>Plan de acción priorizado por ROI</b>
         </div>
       </div>
