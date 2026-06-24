@@ -20,14 +20,20 @@ Herramienta de planeación visual (Gantt) para la **Estrategia de Marketing de G
 |---|---|
 | Reprogramar | Arrastra el centro de una barra |
 | Cambiar duración | Arrastra los bordes de la barra |
-| Editar / borrar | Clic en la acción → editor lateral (nombre, descripción, nivel, canal, fechas, responsable, estatus, avance) |
+| Editar | Clic en la acción → editor lateral (nombre, descripción, nivel, canal, fechas, responsable, estatus, avance) |
+| Quitar | Ícono de papelera al pasar el cursor sobre una fila, o **Eliminar** en el editor |
 | Crear | Botón **+ Acción** |
 | Agrupar | Por **Nivel de ROI** o por **Canal** |
 | Zoom | Trimestre · Mes · Semana |
 | Filtrar | Búsqueda, por estatus, o **solo ideas nuevas** |
 | Exportar | **CSV** o **JSON** |
+| Restablecer | Botón al final de la página; pide escribir `RESTABLECER` para confirmar |
 
-Los cambios se guardan automáticamente en el navegador (localStorage). **Restablecer** vuelve al plan original.
+## Acceso y persistencia
+
+- **Pantalla de acceso** con usuario y contraseña (gate ligero del lado del cliente). Las contraseñas se guardan como *hash* SHA-256, no en texto plano. ⚠️ No es seguridad fuerte: al ser un sitio público, un usuario técnico podría saltarlo. Para control de acceso real se migraría a Supabase Auth.
+- **Persistencia en Supabase**: el estado (tareas + configuración) vive en la tabla `gantt_state` del proyecto `siwiluoxrjnqjnrufbjl`; se carga al abrir y se guarda en cada cambio. `localStorage` queda como respaldo offline. El esquema está en [`supabase_setup.sql`](supabase_setup.sql).
+- Acceso a datos **abierto** (políticas RLS anónimas): cualquiera con la *publishable key* puede leer/editar el tablero.
 
 ## Nota sobre las fechas
 
@@ -35,4 +41,4 @@ El documento original solo traía fechas duras en el sprint de 4 semanas. Las fe
 
 ## Tecnología
 
-React 18 + Babel standalone (vía CDN), un único `index.html`. Sin servidor ni paso de compilación.
+React 18 + Babel standalone + supabase-js (vía CDN), un único `index.html`. Sin servidor ni paso de compilación.

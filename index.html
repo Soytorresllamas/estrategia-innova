@@ -24,6 +24,7 @@
 
 <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js" crossorigin></script>
 
 <style>
@@ -48,10 +49,10 @@
     --n-4: #7a3340;
     --n-5: #6f6a62;
 
-    --leftW: 336px;
-    --rowH: 44px;
-    --barH: 22px;
-    --headH: 56px;
+    --leftW: 348px;
+    --rowH: 50px;
+    --barH: 24px;
+    --headH: 60px;
 
     /* semantic z-scale */
     --z-grid: 0;
@@ -87,13 +88,13 @@
     padding-bottom:18px; border-bottom:1px solid var(--line-2); }
   .mast .id{ display:flex; flex-direction:column; gap:6px; }
   .wordmark{ font-family:"Fraunces", serif; font-weight:600; letter-spacing:-0.02em;
-    font-size: 13px; text-transform:uppercase; color:var(--accent-ink); }
+    font-size: 16.25px; text-transform:uppercase; color:var(--accent-ink); }
   .wordmark b{ letter-spacing:0.34em; }
   .mast h1{ font-family:"Fraunces", serif; font-weight:500; letter-spacing:-0.02em;
-    font-size: clamp(1.7rem, 1.2rem + 1.8vw, 2.6rem); line-height:1.02; margin:0; text-wrap:balance; }
-  .mast .sub{ color:var(--ink-2); font-size:14px; max-width:54ch; line-height:1.45; }
+    font-size: clamp(2.125rem, 1.5rem + 2.25vw, 3.25rem); line-height:1.02; margin:0; text-wrap:balance; }
+  .mast .sub{ color:var(--ink-2); font-size:17.5px; max-width:54ch; line-height:1.45; }
   .mast .meta{ text-align:right; color:var(--ink-3); font-family:"Spline Sans Mono", monospace;
-    font-size:11.5px; line-height:1.7; letter-spacing:0.02em; }
+    font-size:14.4px; line-height:1.7; letter-spacing:0.02em; }
   .mast .meta b{ color:var(--ink-2); font-weight:500; }
 
   /* ---------- kpi strip ---------- */
@@ -102,41 +103,41 @@
   .kpi{ padding:13px 20px; display:flex; flex-direction:column; gap:3px; flex:1 1 auto; min-width:120px;
     border-right:1px solid var(--line); }
   .kpi:last-child{ border-right:none; }
-  .kpi .v{ font-family:"Fraunces",serif; font-weight:600; font-size:22px; letter-spacing:-0.01em;
+  .kpi .v{ font-family:"Fraunces",serif; font-weight:600; font-size:27.5px; letter-spacing:-0.01em;
     font-variant-numeric: tabular-nums; }
-  .kpi .l{ font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:0.07em; }
-  .kpi.range .v{ font-size:15px; font-family:"Spline Sans Mono",monospace; font-weight:500; }
+  .kpi .l{ font-size:13.75px; color:var(--ink-3); text-transform:uppercase; letter-spacing:0.07em; }
+  .kpi.range .v{ font-size:18.75px; font-family:"Spline Sans Mono",monospace; font-weight:500; }
   .legend{ display:flex; gap:14px; padding:13px 20px; flex-wrap:wrap; align-items:center; }
-  .legend .dot{ display:inline-flex; align-items:center; gap:7px; font-size:11.5px; color:var(--ink-2); }
+  .legend .dot{ display:inline-flex; align-items:center; gap:7px; font-size:14.375px; color:var(--ink-2); }
   .legend .sw{ width:11px; height:11px; border-radius:3px; }
 
   /* ---------- toolbar ---------- */
   .toolbar{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px; }
   .search{ position:relative; flex:1 1 220px; min-width:180px; max-width:340px; }
   .search input{ width:100%; padding:9px 12px 9px 32px; border:1px solid var(--line-2); border-radius:9px;
-    background:var(--surface); font:inherit; font-size:13.5px; color:var(--ink); }
+    background:var(--surface); font:inherit; font-size:16.875px; color:var(--ink); }
   .search svg{ position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--ink-3); }
   .search input::placeholder{ color:var(--ink-3); }
   .search input:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; border-color:transparent; }
 
   .seg{ display:inline-flex; border:1px solid var(--line-2); border-radius:9px; overflow:hidden; background:var(--surface); }
-  .seg button{ border:none; background:transparent; font:inherit; font-size:13px; padding:8px 13px; cursor:pointer;
+  .seg button{ border:none; background:transparent; font:inherit; font-size:16.25px; padding:8px 13px; cursor:pointer;
     color:var(--ink-2); border-right:1px solid var(--line); transition: background .15s var(--ease), color .15s var(--ease); }
   .seg button:last-child{ border-right:none; }
   .seg button[aria-pressed="true"]{ background:var(--ink); color:#fff; }
   .seg button:hover:not([aria-pressed="true"]){ background:var(--surface-2); }
 
-  .label{ font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:0.06em; margin:0 2px 0 6px; }
+  .label{ font-size:13.75px; color:var(--ink-3); text-transform:uppercase; letter-spacing:0.06em; margin:0 2px 0 6px; }
 
   .chip{ border:1px solid var(--line-2); background:var(--surface); border-radius:999px; padding:6px 12px;
-    font:inherit; font-size:12.5px; cursor:pointer; color:var(--ink-2); display:inline-flex; align-items:center; gap:6px;
+    font:inherit; font-size:15.625px; cursor:pointer; color:var(--ink-2); display:inline-flex; align-items:center; gap:6px;
     transition: background .15s var(--ease), border-color .15s; }
   .chip .sw{ width:9px; height:9px; border-radius:50%; }
   .chip[aria-pressed="true"]{ background:var(--ink); color:#fff; border-color:var(--ink); }
   .chip:hover:not([aria-pressed="true"]){ background:var(--surface-2); }
 
   .btn{ border:1px solid var(--line-2); background:var(--surface); border-radius:9px; padding:8px 13px;
-    font:inherit; font-size:13px; cursor:pointer; color:var(--ink); display:inline-flex; align-items:center; gap:6px;
+    font:inherit; font-size:16.25px; cursor:pointer; color:var(--ink); display:inline-flex; align-items:center; gap:6px;
     transition: background .15s var(--ease), border-color .15s, transform .06s; }
   .btn:hover{ background:var(--surface-2); }
   .btn:active{ transform:translateY(1px); }
@@ -145,6 +146,10 @@
   .btn.ghost{ border-color:transparent; background:transparent; color:var(--ink-3); }
   .btn.ghost:hover{ color:var(--ink); background:var(--surface-2); }
   .spacer{ flex:1 1 auto; }
+  .syncpill{ display:inline-flex; align-items:center; gap:7px; font-size:13.75px; color:var(--ink-2);
+    font-family:"Spline Sans Mono", monospace; padding:6px 11px; border:1px solid var(--line); border-radius:999px;
+    background:var(--surface-2); white-space:nowrap; }
+  .syncpill .sw{ width:8px; height:8px; border-radius:50%; }
 
   /* ---------- gantt ---------- */
   .gantt{ border:1px solid var(--line-2); border-radius:14px; background:var(--surface);
@@ -155,13 +160,13 @@
   .head .corner{ position:sticky; left:0; z-index:var(--z-corner); width:var(--leftW); flex:0 0 var(--leftW);
     background:var(--surface); border-right:1px solid var(--line-2); border-bottom:1px solid var(--line-2);
     display:flex; align-items:flex-end; padding:0 16px 9px; }
-  .head .corner span{ font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:0.08em; }
+  .head .corner span{ font-size:13.75px; color:var(--ink-3); text-transform:uppercase; letter-spacing:0.08em; }
   .head .timehead{ position:relative; border-bottom:1px solid var(--line-2); background:var(--surface); }
   .month{ position:absolute; top:0; bottom:0; border-left:1px solid var(--line); display:flex; flex-direction:column;
     justify-content:flex-end; padding:0 0 8px 9px; }
-  .month b{ font-family:"Spline Sans Mono",monospace; font-size:11.5px; font-weight:500; color:var(--ink-2);
+  .month b{ font-family:"Spline Sans Mono",monospace; font-size:14.375px; font-weight:500; color:var(--ink-2);
     text-transform:uppercase; letter-spacing:0.04em; }
-  .month i{ font-style:normal; font-size:10px; color:var(--ink-3); }
+  .month i{ font-style:normal; font-size:12.5px; color:var(--ink-3); }
   .month.q::before{ content:""; }
 
   .grid{ position:absolute; top:0; bottom:0; z-index:var(--z-grid); pointer-events:none; }
@@ -174,13 +179,13 @@
   .grp{ display:flex; align-items:stretch; background:var(--surface-2); }
   .grp .gl{ position:sticky; left:0; z-index:var(--z-left); width:var(--leftW); flex:0 0 var(--leftW);
     background:var(--surface-2); border-right:1px solid var(--line-2); border-bottom:1px solid var(--line);
-    display:flex; align-items:center; gap:9px; padding:0 14px; height:40px; cursor:pointer; }
+    display:flex; align-items:center; gap:9px; padding:0 14px; height:46px; cursor:pointer; }
   .grp .caret{ transition: transform .18s var(--ease); color:var(--ink-3); display:flex; }
   .grp.collapsed .caret{ transform: rotate(-90deg); }
-  .grp .gname{ font-family:"Fraunces",serif; font-weight:600; font-size:13.5px; letter-spacing:-0.01em; color:var(--ink);
+  .grp .gname{ font-family:"Fraunces",serif; font-weight:600; font-size:16.875px; letter-spacing:-0.01em; color:var(--ink);
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .grp .gswatch{ width:10px; height:10px; border-radius:3px; flex:0 0 auto; }
-  .grp .gcount{ font-size:11px; color:var(--ink-3); font-variant-numeric:tabular-nums; margin-left:auto;
+  .grp .gcount{ font-size:13.75px; color:var(--ink-3); font-variant-numeric:tabular-nums; margin-left:auto;
     font-family:"Spline Sans Mono",monospace; }
   .grp .gt{ position:relative; border-bottom:1px solid var(--line); }
   .rollup{ position:absolute; top:50%; transform:translateY(-50%); height:6px; border-radius:3px; opacity:.55; }
@@ -193,12 +198,12 @@
   .row.sel .rl{ background:var(--accent-wash); }
   .rlc{ display:flex; flex-direction:column; gap:2px; min-width:0; flex:1 1 auto; }
   .rline1{ display:flex; align-items:center; gap:6px; min-width:0; }
-  .rl .rname{ font-size:13px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  .rl .rname{ font-size:16.25px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     flex:0 1 auto; min-width:0; }
   .sdot{ width:8px; height:8px; border-radius:50%; flex:0 0 auto; }
-  .newtag{ font-size:8.5px; font-weight:700; letter-spacing:0.06em; color:#fff; background:var(--accent);
+  .newtag{ font-size:10.625px; font-weight:700; letter-spacing:0.06em; color:#fff; background:var(--accent);
     border-radius:4px; padding:2px 5px; text-transform:uppercase; flex:0 0 auto; }
-  .rl .rsub{ font-size:10.5px; color:var(--ink-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .rl .rsub{ font-size:13.125px; color:var(--ink-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
   .row .rt{ position:relative; border-bottom:1px solid var(--line); }
   .row:hover .rt{ background: color-mix(in oklch, var(--surface-2) 55%, transparent); }
@@ -213,7 +218,7 @@
   .bar.sel{ outline:2px solid var(--c); outline-offset:1px; }
   .bar.review{ border-style:dashed; opacity:.72; }
   .bar .fill{ position:absolute; left:0; top:0; bottom:0; background:var(--c); opacity:.9; border-radius:6px 0 0 6px; }
-  .bar .pct{ position:absolute; right:6px; top:50%; transform:translateY(-50%); font-size:10px;
+  .bar .pct{ position:absolute; right:6px; top:50%; transform:translateY(-50%); font-size:12.5px;
     font-family:"Spline Sans Mono",monospace; color: color-mix(in srgb, var(--c) 78%, black); font-weight:500; }
   .bar .edge{ position:absolute; top:0; bottom:0; width:7px; cursor:ew-resize; z-index:2; }
   .bar .edge.l{ left:0; } .bar .edge.r{ right:0; }
@@ -223,14 +228,14 @@
   .mile{ position:absolute; top:50%; width:16px; height:16px; transform:translate(-50%,-50%) rotate(45deg);
     background:var(--c); border:1px solid color-mix(in srgb,var(--c) 60%, black); cursor:grab; border-radius:3px; }
   .mile.sel{ outline:2px solid var(--c); outline-offset:2px; }
-  .milelabel{ position:absolute; top:50%; transform:translateY(-50%); font-size:11px; color:var(--ink-2);
+  .milelabel{ position:absolute; top:50%; transform:translateY(-50%); font-size:13.75px; color:var(--ink-2);
     white-space:nowrap; font-weight:600; }
 
   .empty{ padding:48px 24px; text-align:center; color:var(--ink-3); }
-  .empty b{ display:block; font-family:"Fraunces",serif; color:var(--ink-2); font-size:16px; margin-bottom:4px; }
+  .empty b{ display:block; font-family:"Fraunces",serif; color:var(--ink-2); font-size:20px; margin-bottom:4px; }
 
-  .hint{ margin-top:12px; font-size:12px; color:var(--ink-3); display:flex; gap:18px; flex-wrap:wrap; align-items:center; }
-  .hint kbd{ font-family:"Spline Sans Mono",monospace; font-size:11px; background:var(--surface-2);
+  .hint{ margin-top:12px; font-size:15px; color:var(--ink-3); display:flex; gap:18px; flex-wrap:wrap; align-items:center; }
+  .hint kbd{ font-family:"Spline Sans Mono",monospace; font-size:13.75px; background:var(--surface-2);
     border:1px solid var(--line); border-radius:5px; padding:1px 6px; color:var(--ink-2); }
 
   /* ---------- drawer ---------- */
@@ -243,12 +248,12 @@
   @keyframes slidein{ to{ transform:translateX(0); } }
   .drawer header{ padding:20px 22px 14px; border-bottom:1px solid var(--line); display:flex; align-items:flex-start; gap:12px; }
   .drawer header .dband{ width:5px; align-self:stretch; border-radius:3px; }
-  .drawer header h3{ margin:0; font-family:"Fraunces",serif; font-weight:600; font-size:17px; letter-spacing:-0.01em; line-height:1.2; }
+  .drawer header h3{ margin:0; font-family:"Fraunces",serif; font-weight:600; font-size:21.25px; letter-spacing:-0.01em; line-height:1.2; }
   .drawer header .x{ margin-left:auto; }
   .dbody{ overflow:auto; padding:18px 22px 26px; display:flex; flex-direction:column; gap:16px; }
   .field{ display:flex; flex-direction:column; gap:6px; }
-  .field > label{ font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:0.06em; }
-  .field input, .field select, .field textarea{ font:inherit; font-size:13.5px; color:var(--ink);
+  .field > label{ font-size:13.75px; color:var(--ink-3); text-transform:uppercase; letter-spacing:0.06em; }
+  .field input, .field select, .field textarea{ font:inherit; font-size:16.875px; color:var(--ink);
     border:1px solid var(--line-2); border-radius:8px; padding:9px 10px; background:var(--surface); width:100%; }
   .field textarea{ resize:vertical; min-height:70px; line-height:1.5; }
   .field input:focus-visible, .field select:focus-visible, .field textarea:focus-visible{
@@ -256,17 +261,70 @@
   .two{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
   .rangerow{ display:flex; align-items:center; gap:12px; }
   .rangerow input[type=range]{ flex:1; accent-color:var(--accent); }
-  .rangerow .pv{ font-family:"Spline Sans Mono",monospace; font-size:13px; width:46px; text-align:right; color:var(--ink-2); }
-  .dur{ font-size:12px; color:var(--ink-3); }
-  .check{ display:flex; align-items:center; gap:9px; font-size:13.5px; color:var(--ink); cursor:pointer; }
+  .rangerow .pv{ font-family:"Spline Sans Mono",monospace; font-size:16.25px; width:46px; text-align:right; color:var(--ink-2); }
+  .dur{ font-size:15px; color:var(--ink-3); }
+  .check{ display:flex; align-items:center; gap:9px; font-size:16.875px; color:var(--ink); cursor:pointer; }
   .check input{ width:16px; height:16px; accent-color:var(--accent); }
   .drawer footer{ margin-top:auto; padding:14px 22px; border-top:1px solid var(--line); display:flex; gap:10px; }
   .btn.danger{ color:#fff; background:#b3402f; border-color:#b3402f; }
   .btn.danger:hover{ background:#9a3526; }
 
   .toast{ position:fixed; bottom:22px; left:50%; transform:translateX(-50%); z-index:var(--z-toast);
-    background:var(--ink); color:#fff; padding:10px 16px; border-radius:10px; font-size:13px;
+    background:var(--ink); color:#fff; padding:10px 16px; border-radius:10px; font-size:16.25px;
     box-shadow:0 10px 30px -10px rgba(0,0,0,0.5); animation: fade .2s var(--ease); }
+
+  /* ---------- login ---------- */
+  .login{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+  .login-card{ width:min(420px, 100%); background:var(--surface); border:1px solid var(--line-2);
+    border-radius:18px; padding:36px 34px; display:flex; flex-direction:column; gap:14px;
+    box-shadow: 0 30px 80px -40px rgba(40,30,20,0.35); }
+  .login-card .wordmark{ font-size:16.25px; }
+  .login-card h1{ font-family:"Fraunces", serif; font-weight:500; letter-spacing:-0.02em;
+    font-size: 2rem; line-height:1.05; margin:0; }
+  .login-sub{ color:var(--ink-2); font-size:15px; line-height:1.45; margin:0 0 6px; }
+  .login-field{ display:flex; flex-direction:column; gap:6px; }
+  .login-field label{ font-size:12.5px; color:var(--ink-3); text-transform:uppercase; letter-spacing:0.06em; }
+  .login-field input{ font:inherit; font-size:16px; color:var(--ink); border:1px solid var(--line-2);
+    border-radius:9px; padding:11px 12px; background:var(--surface); width:100%; }
+  .login-field input:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; border-color:transparent; }
+  .login-btn{ justify-content:center; margin-top:6px; padding:11px; font-size:16px; }
+  .login-err{ color:#b3402f; font-size:14px; background:color-mix(in srgb,#b3402f 8%, white);
+    border:1px solid color-mix(in srgb,#b3402f 30%, white); border-radius:8px; padding:8px 11px; }
+
+  /* ---------- userbar / logout ---------- */
+  .userbar{ display:inline-flex; align-items:center; gap:7px; color:var(--ink-2); }
+  .userbar .udot{ width:8px; height:8px; border-radius:50%; background:#2f6d54; }
+  .linkbtn{ border:none; background:none; font:inherit; font-size:inherit; color:var(--accent-ink);
+    cursor:pointer; padding:0; text-decoration:underline; text-underline-offset:2px; }
+  .linkbtn:hover{ color:var(--accent); }
+
+  /* ---------- row delete ---------- */
+  .rowdel{ flex:0 0 auto; opacity:0; border:none; background:none; cursor:pointer; color:var(--ink-3);
+    display:flex; align-items:center; padding:4px; border-radius:6px; transition: opacity .12s var(--ease), background .12s, color .12s; }
+  .row:hover .rowdel{ opacity:1; }
+  .rowdel:hover{ color:#b3402f; background:color-mix(in srgb,#b3402f 12%, transparent); }
+  .rowdel:focus-visible{ opacity:1; outline:2px solid var(--accent); outline-offset:1px; }
+
+  /* ---------- footer actions / reset ---------- */
+  .footer-actions{ margin-top:18px; padding-top:16px; border-top:1px solid var(--line);
+    display:flex; justify-content:flex-end; }
+  .btn.danger-ghost{ color:#b3402f; border-color:color-mix(in srgb,#b3402f 35%, white); background:transparent; }
+  .btn.danger-ghost:hover{ background:color-mix(in srgb,#b3402f 8%, white); }
+
+  /* ---------- modal (reset confirm) ---------- */
+  .modal{ position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:calc(var(--z-drawer) + 1);
+    width:min(460px, 94vw); background:var(--surface); border:1px solid var(--line-2); border-radius:16px;
+    padding:26px 26px 22px; box-shadow:0 40px 90px -40px rgba(0,0,0,0.45); display:flex; flex-direction:column; gap:12px;
+    animation: pop .2s var(--ease); }
+  @keyframes pop{ from{ opacity:0; transform:translate(-50%,-46%); } to{ opacity:1; transform:translate(-50%,-50%); } }
+  .modal h3{ margin:0; font-family:"Fraunces",serif; font-weight:600; font-size:21px; letter-spacing:-0.01em; }
+  .modal p{ margin:0; color:var(--ink-2); font-size:15px; line-height:1.5; }
+  .modal .modal-hint{ color:var(--ink); }
+  .modal input{ font:inherit; font-size:16px; letter-spacing:0.12em; text-transform:uppercase;
+    border:1px solid var(--line-2); border-radius:9px; padding:11px 12px; background:var(--surface); }
+  .modal input:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; border-color:transparent; }
+  .modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:4px; }
+  .btn.danger[disabled]{ opacity:.45; cursor:not-allowed; }
 
   @media (max-width: 720px){
     :root{ --leftW: 210px; }
@@ -318,6 +376,13 @@ const STATUS = {
   todo:{label:"Por hacer", hex:"#9b958c"}, doing:{label:"En curso", hex:"#2c5670"},
   done:{label:"Hecho", hex:"#2f6d54"}, review:{label:"Revisar", hex:"#b07d2a"},
   risk:{label:"En riesgo", hex:"#b3402f"},
+};
+const SYNC_UI = {
+  connecting:{ label:"Conectando…", hex:"#b07d2a" },
+  saving:{ label:"Guardando…", hex:"#b07d2a" },
+  synced:{ label:"Supabase ✓", hex:"#2f6d54" },
+  error:{ label:"Sin conexión · local", hex:"#b3402f" },
+  local:{ label:"Solo local", hex:"#9b958c" },
 };
 
 /* ----------------------------- seed plan ----------------------------- */
@@ -384,15 +449,115 @@ const SEED = [
   t("n5e","Redes sociales con bajo engagement","Eventos wellness atraen público incorrecto. Migrar a lifestyle + datos de inversión.","5","Publicidad Orgánica","2026-07-01","2026-07-15",{status:"review",owner:"Contenido"}),
 ];
 
-/* ----------------------------- persistence ----------------------------- */
+/* ----------------------------- persistence (Supabase + local) ----------------------------- */
+const SUPABASE_URL = "https://siwiluoxrjnqjnrufbjl.supabase.co";
+const SUPABASE_KEY = "sb_publishable_eB75esPUCuPUkMyYD_df1A_uwhUVp9E";
+const ROW_ID = "innova-default";          // un solo tablero compartido
+const TABLE = "gantt_state";
+const sb = (window.supabase && window.supabase.createClient)
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } })
+  : null;
+
 const LS_KEY = "gantt-innova-v1";
-const load = () => { try { const r = localStorage.getItem(LS_KEY); if(!r) return null;
-  const p = JSON.parse(r); return Array.isArray(p) && p.length ? p : null; } catch(e){ return null; } };
-const save = (tasks) => { try { localStorage.setItem(LS_KEY, JSON.stringify(tasks)); } catch(e){} };
+// Devuelve { tasks, config } desde localStorage; migra el formato viejo (array suelto).
+const loadLocal = () => {
+  try {
+    const r = localStorage.getItem(LS_KEY); if(!r) return null;
+    const p = JSON.parse(r);
+    if(Array.isArray(p)) return { tasks: p, config: {} };
+    if(p && Array.isArray(p.tasks)) return p;
+    return null;
+  } catch(e){ return null; }
+};
+const saveLocal = (state) => { try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch(e){} };
+// Lee el estado remoto (o null si no hay fila / hay error).
+const loadRemote = async () => {
+  if(!sb) return { ok:false, data:null };
+  const { data, error } = await sb.from(TABLE).select("data").eq("id", ROW_ID).maybeSingle();
+  if(error) return { ok:false, error };
+  return { ok:true, data: (data && data.data) ? data.data : null };
+};
+const saveRemote = async (state) => {
+  if(!sb) return { ok:false };
+  const { error } = await sb.from(TABLE).upsert({ id: ROW_ID, data: state, updated_at: new Date().toISOString() });
+  return error ? { ok:false, error } : { ok:true };
+};
 
 const PX = { trimestre: 5, mes: 11, semana: 30 };
 const colorOf = (task, groupBy) => groupBy === "nivel"
   ? (NIVELES[task.nivel]?.hex || "#888") : (CANALES[task.canal]?.hex || "#888");
+
+/* ----------------------------- auth (gate ligero, no es seguridad real) ----------------------------- */
+const AUTH_KEY = "gantt-innova-auth";
+// Se guarda el HASH SHA-256 de la contraseña, no el texto plano.
+const PW_HASH = "0683f066392313f7ab5adeb4130d68a24043be7b749167a1999cd273f78fb402"; // Elmejor2026_
+const USERS = { alejandro: PW_HASH, ricardo: PW_HASH };
+const DISPLAY = { alejandro: "Alejandro", ricardo: "Ricardo" };
+const sha256hex = async (str) => {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+};
+
+function Login({ onLogin }){
+  const [user, setUser] = useState("");
+  const [pass, setPass] = useState("");
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+  const submit = async (e)=>{
+    e.preventDefault(); setErr(""); setBusy(true);
+    const u = user.trim().toLowerCase();
+    const expected = USERS[u];
+    let ok = false;
+    if(expected){ try { ok = (await sha256hex(pass)) === expected; } catch(_){ ok = false; } }
+    setBusy(false);
+    if(ok) onLogin(u); else setErr("Usuario o contraseña incorrectos.");
+  };
+  return (
+    <div className="login">
+      <form className="login-card" onSubmit={submit}>
+        <div className="wordmark">Grupo <b>Innova</b></div>
+        <h1>Estrategia de Marketing</h1>
+        <p className="login-sub">Tablero de planeación. Ingresa tus credenciales para continuar.</p>
+        <div className="login-field">
+          <label>Usuario</label>
+          <input value={user} onChange={e=>setUser(e.target.value)} autoFocus placeholder="Alejandro o Ricardo" autoComplete="username" />
+        </div>
+        <div className="login-field">
+          <label>Contraseña</label>
+          <input type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="••••••••••" autoComplete="current-password" />
+        </div>
+        {err && <div className="login-err">{err}</div>}
+        <button className="btn primary login-btn" type="submit" disabled={busy}>{busy ? "Verificando…" : "Entrar"}</button>
+      </form>
+    </div>
+  );
+}
+
+function ResetModal({ onClose, onConfirm }){
+  const [txt, setTxt] = useState("");
+  const ok = txt.trim().toUpperCase() === "RESTABLECER";
+  useEffect(()=>{
+    const onKey = (e)=>{ if(e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return ()=> window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return (
+    <React.Fragment>
+      <div className="scrim" onClick={onClose} />
+      <div className="modal" role="dialog" aria-label="Restablecer plan">
+        <h3>Restablecer el plan</h3>
+        <p>Esto reemplaza <b>todas las acciones</b> por el plan original y sobrescribe lo guardado en Supabase. No se puede deshacer.</p>
+        <p className="modal-hint">Para confirmar, escribe <b>RESTABLECER</b>:</p>
+        <input value={txt} onChange={e=>setTxt(e.target.value)} placeholder="RESTABLECER" autoFocus
+          onKeyDown={e=>{ if(e.key==="Enter" && ok) onConfirm(); }} />
+        <div className="modal-actions">
+          <button className="btn ghost" onClick={onClose}>Cancelar</button>
+          <button className="btn danger" disabled={!ok} onClick={onConfirm}>Restablecer plan</button>
+        </div>
+      </div>
+    </React.Fragment>
+  );
+}
 
 /* ----------------------------- small components ----------------------------- */
 function Seg({ value, onChange, options }){
@@ -494,18 +659,61 @@ function Drawer({ task, onChange, onClose, onDelete }){
 }
 
 /* ----------------------------- app ----------------------------- */
-function App(){
-  const [tasks, setTasks] = useState(() => load() || SEED);
-  const [groupBy, setGroupBy] = useState("nivel");
-  const [zoom, setZoom] = useState("mes");
+function App({ authUser, onLogout }){
+  const _local = loadLocal();
+  const [tasks, setTasks] = useState(() => (_local && _local.tasks) || SEED);
+  const [groupBy, setGroupBy] = useState((_local && _local.config && _local.config.groupBy) || "nivel");
+  const [zoom, setZoom] = useState((_local && _local.config && _local.config.zoom) || "mes");
   const [query, setQuery] = useState("");
   const [statusF, setStatusF] = useState(()=> new Set());
   const [onlyNew, setOnlyNew] = useState(false);
   const [collapsed, setCollapsed] = useState(()=> new Set());
   const [selId, setSelId] = useState(null);
   const [toast, setToast] = useState(null);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [sync, setSync] = useState(sb ? "connecting" : "local"); // connecting|synced|saving|error|local
+  const hydrated = useRef(false);
 
-  useEffect(()=> save(tasks), [tasks]);
+  /* hidratar desde Supabase al abrir (si no hay fila, sube el estado actual) */
+  useEffect(()=>{
+    let cancelled = false;
+    if(!sb){ hydrated.current = true; return; }
+    (async ()=>{
+      const res = await loadRemote();
+      if(cancelled) return;
+      if(res.ok && res.data && Array.isArray(res.data.tasks)){
+        setTasks(res.data.tasks);
+        if(res.data.config){
+          if(res.data.config.groupBy) setGroupBy(res.data.config.groupBy);
+          if(res.data.config.zoom) setZoom(res.data.config.zoom);
+        }
+        setSync("synced");
+      } else if(res.ok && !res.data){
+        const up = await saveRemote({ tasks, config:{ groupBy, zoom } });
+        setSync(up.ok ? "synced" : "error");
+      } else {
+        console.warn("Supabase no disponible:", res.error);
+        setSync("error");
+      }
+      hydrated.current = true;
+    })();
+    return ()=>{ cancelled = true; };
+  }, []);
+
+  /* guardar: siempre a local; a Supabase (con debounce) tras la hidratación */
+  useEffect(()=>{
+    const state = { tasks, config:{ groupBy, zoom } };
+    saveLocal(state);
+    if(!sb || !hydrated.current) return;
+    let cancelled = false;
+    setSync(s => s === "error" ? "saving" : (s === "synced" ? "saving" : s));
+    const h = setTimeout(async ()=>{
+      const up = await saveRemote(state);
+      if(!cancelled) setSync(up.ok ? "synced" : "error");
+    }, 600);
+    return ()=>{ cancelled = true; clearTimeout(h); };
+  }, [tasks, groupBy, zoom]);
+
   useEffect(()=>{
     const onKey = (e)=>{ if(e.key === "Escape") setSelId(null); };
     window.addEventListener("keydown", onKey);
@@ -633,7 +841,7 @@ function App(){
   };
   const toggleStatus = (s)=> setStatusF(prev => { const n = new Set(prev); n.has(s) ? n.delete(s) : n.add(s); return n; });
   const toggleGroup = (k)=> setCollapsed(prev => { const n = new Set(prev); n.has(k) ? n.delete(k) : n.add(k); return n; });
-  const reset = ()=>{ if(confirm("¿Restablecer el plan original? Se perderán tus cambios.")){ setTasks(SEED); setSelId(null); flash("Plan restablecido"); } };
+  const doReset = ()=>{ setTasks(SEED); setSelId(null); setResetOpen(false); flash("Plan restablecido"); };
 
   /* ------- export ------- */
   const download = (name, text, type)=>{
@@ -666,9 +874,9 @@ function App(){
           <div className="sub">Roadmap maestro 2026 — Gantt interactivo. Arrastra para reprogramar, edita cada acción y exporta tu plan.</div>
         </div>
         <div className="meta">
+          <span className="userbar"><span className="udot"/>{DISPLAY[authUser] || authUser} · <button className="linkbtn" onClick={onLogout}>Salir</button></span><br/>
           León, Guanajuato<br/>
-          <b>Plan de acción priorizado por ROI</b><br/>
-          Sprint Open House · Niveles 1–5
+          <b>Plan de acción priorizado por ROI</b>
         </div>
       </div>
 
@@ -699,10 +907,13 @@ function App(){
           <span className="sw" style={{background:"var(--accent)"}}/> Solo ideas nuevas
         </button>
         <div className="spacer" />
+        <span className="syncpill" title="Estado de sincronización con Supabase">
+          <span className="sw" style={{background:(SYNC_UI[sync]||SYNC_UI.local).hex}}/>
+          {(SYNC_UI[sync]||SYNC_UI.local).label}
+        </span>
         <button className="btn primary" onClick={addTask}>+ Acción</button>
         <button className="btn" onClick={exportCSV}>CSV</button>
         <button className="btn" onClick={exportJSON}>JSON</button>
-        <button className="btn ghost" onClick={reset}>Restablecer</button>
       </div>
 
       <div className="toolbar" style={{marginTop:"-4px"}}>
@@ -773,6 +984,10 @@ function App(){
                           </div>
                           <span className="rsub">{tk.owner} · {STATUS[tk.status].label}</span>
                         </div>
+                        <button className="rowdel" title="Quitar acción" aria-label={"Quitar " + tk.name}
+                          onClick={(e)=>{ e.stopPropagation(); if(confirm("¿Quitar «" + tk.name + "»?")) del(tk.id); }}>
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                        </button>
                       </div>
                       <div className="rt" style={{ width: width }}>
                         {tk.milestone ? (
@@ -806,17 +1021,30 @@ function App(){
 
       <div className="hint">
         <span><kbd>Arrastra</kbd> el centro de una barra para reprogramar · <kbd>bordes</kbd> para cambiar duración</span>
-        <span><kbd>Clic</kbd> abre el editor · <kbd>Esc</kbd> cierra</span>
-        <span>Cambios guardados automáticamente en este navegador</span>
+        <span><kbd>Clic</kbd> abre el editor · pasa el cursor sobre una fila para <kbd>quitarla</kbd> · <kbd>Esc</kbd> cierra</span>
+        <span>Cambios guardados automáticamente (Supabase + respaldo local)</span>
+      </div>
+
+      <div className="footer-actions">
+        <button className="btn danger-ghost" onClick={()=>setResetOpen(true)}>Restablecer plan original</button>
       </div>
 
       <Drawer task={sel} onChange={patch} onClose={()=>setSelId(null)} onDelete={del} />
+      {resetOpen && <ResetModal onClose={()=>setResetOpen(false)} onConfirm={doReset} />}
       {toast && <div className="toast">{toast}</div>}
     </div>
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+function Root(){
+  const [authUser, setAuthUser] = useState(()=>{
+    try { const u = localStorage.getItem(AUTH_KEY); return (u && USERS[u]) ? u : null; } catch(e){ return null; }
+  });
+  if(!authUser) return <Login onLogin={(u)=>{ try{ localStorage.setItem(AUTH_KEY, u); }catch(e){} setAuthUser(u); }} />;
+  return <App authUser={authUser} onLogout={()=>{ try{ localStorage.removeItem(AUTH_KEY); }catch(e){} setAuthUser(null); }} />;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<Root />);
 </script>
 </body>
 </html>
