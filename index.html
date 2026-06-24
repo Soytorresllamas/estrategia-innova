@@ -25,6 +25,7 @@
 <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" crossorigin></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js" crossorigin></script>
 
 <style>
@@ -219,10 +220,11 @@
   .row.sel .rt{ background: color-mix(in oklch, var(--accent-wash) 50%, transparent); }
 
   .bar{ position:absolute; top:50%; transform:translateY(-50%); height:var(--barH);
-    background: color-mix(in srgb, var(--c) 18%, white);
-    border:1px solid color-mix(in srgb, var(--c) 46%, white);
+    background: color-mix(in srgb, var(--c) 24%, white);
+    border:1px solid color-mix(in srgb, var(--c) 54%, white);
     border-radius:7px; cursor:grab; overflow:hidden; min-width:8px;
     transition: box-shadow .15s var(--ease); }
+  .bar:focus-visible, .mile:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
   .bar:hover{ box-shadow: 0 4px 14px -4px color-mix(in srgb, var(--c) 60%, transparent); }
   .bar.sel{ outline:2px solid var(--c); outline-offset:1px; }
   .bar.review{ border-style:dashed; opacity:.72; }
@@ -333,14 +335,59 @@
     border:1px solid var(--line-2); border-radius:9px; padding:11px 12px; background:var(--surface); }
   .modal input:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; border-color:transparent; }
   .modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:4px; }
+  .btn[disabled]{ opacity:.4; cursor:not-allowed; }
   .btn.danger[disabled]{ opacity:.45; cursor:not-allowed; }
 
-  @media (max-width: 720px){
-    :root{ --leftW: 210px; }
-    .wrap{ padding:18px 14px 40px; }
-    .kpi{ min-width:96px; padding:11px 14px; }
-    .mast .meta{ text-align:left; }
+  /* ---------- kpi meter (#10) ---------- */
+  .kmeter{ height:5px; border-radius:3px; background:var(--surface-3); overflow:hidden; margin-top:6px; max-width:160px; }
+  .kmeter > div{ height:100%; background:var(--accent); border-radius:3px; transition: width .3s var(--ease); }
+
+  /* ---------- owner add inline (#8) ---------- */
+  .owner-add{ display:flex; gap:6px; align-items:stretch; }
+  .owner-add input{ flex:1 1 auto; min-width:0; }
+  .owner-add .btn{ font-size:14px; padding:6px 10px; white-space:nowrap; }
+
+  /* ---------- responsive (#6) ---------- */
+  @media (max-width: 860px){
+    .mast h1{ font-size: clamp(1.35rem, 1.1rem + 1vw, 1.8rem); }
+    .kpi .v{ font-size:22px; } .kpi.range .v{ font-size:15px; }
+    .toolbar{ gap:8px; }
+    .seg button, .btn, .chip{ font-size:14px; }
+    .search input{ font-size:15px; }
   }
+  @media (max-width: 720px){
+    :root{ --leftW: 188px; --rowH: 46px; }
+    .wrap{ padding:16px 12px 40px; }
+    .kpi{ min-width:88px; padding:10px 13px; }
+    .kpi .v{ font-size:20px; }
+    .kpi .l{ font-size:12px; }
+    .mast .meta{ text-align:left; }
+    .mast .sub{ font-size:15px; }
+    .gantt{ max-height: 70vh; }
+    .rl .rname{ font-size:14.5px; } .rl .rsub{ font-size:12px; }
+    .legend{ padding:10px 14px; gap:10px; }
+    .legend .dot{ font-size:12.5px; }
+    .drawer{ width:min(420px, 96vw); }
+  }
+  @media (max-width: 460px){
+    :root{ --leftW: 158px; }
+    .mast h1{ font-size:1.5rem; }
+    .search{ max-width:none; flex:1 1 100%; }
+    .label{ display:none; }
+  }
+
+  /* ---------- print / PDF (#5) ---------- */
+  @media print {
+    .toolbar, .footer-actions, .hint, .drawer, .scrim, .modal, .toast, .rowdel, .foldall { display:none !important; }
+    body{ background:#fff; }
+    .wrap{ max-width:none; padding:0; }
+    .gantt{ max-height:none !important; overflow:visible !important; border:none; box-shadow:none; border-radius:0; }
+    .head, .head .corner, .row .rl, .grp .gl{ position:static !important; }
+    .row:hover .rl, .row:hover .rt{ background:transparent !important; }
+    .bar, .mile{ box-shadow:none !important; }
+    @page{ size: landscape; margin: 10mm; }
+  }
+
   @media (prefers-reduced-motion: reduce){
     *{ animation-duration:.001ms !important; transition-duration:.001ms !important; }
   }
@@ -579,12 +626,15 @@ function Seg({ value, onChange, options }){
   );
 }
 
-function Drawer({ task, onChange, onClose, onDelete }){
-  if(!task) return null;
+function Drawer({ task, owners, onAddOwner, onChange, onClose, onDelete }){
+  const [addingOwner, setAddingOwner] = useState(false);
+  const [newOwner, setNewOwner] = useState("");
   const start = parse(task.start), end = parse(task.end);
   const dur = diffDays(start,end)+1;
   const set = (k,v)=> onChange({ ...task, [k]: v });
   const band = NIVELES[task.nivel]?.hex || "#888";
+  const ownerOpts = owners.includes(task.owner) ? owners : [task.owner, ...owners];
+  const commitOwner = ()=>{ const n = newOwner.trim(); if(n){ onAddOwner(n); set("owner", n); } setAddingOwner(false); setNewOwner(""); };
   return (
     <React.Fragment>
       <div className="scrim" onClick={onClose} />
@@ -631,7 +681,19 @@ function Drawer({ task, onChange, onClose, onDelete }){
           <div className="two">
             <div className="field">
               <label>Responsable</label>
-              <input value={task.owner} onChange={e=>set("owner", e.target.value)} placeholder="Responsable" />
+              {addingOwner ? (
+                <div className="owner-add">
+                  <input value={newOwner} autoFocus placeholder="Nuevo responsable"
+                    onChange={e=>setNewOwner(e.target.value)}
+                    onKeyDown={e=>{ if(e.key==="Enter"){ e.preventDefault(); commitOwner(); } if(e.key==="Escape"){ e.preventDefault(); setAddingOwner(false); setNewOwner(""); } }} />
+                  <button type="button" className="btn primary" onClick={commitOwner}>Agregar</button>
+                </div>
+              ) : (
+                <select value={task.owner} onChange={e=>{ if(e.target.value==="__new__"){ setAddingOwner(true); } else set("owner", e.target.value); }}>
+                  {ownerOpts.map(o => <option key={o} value={o}>{o}</option>)}
+                  <option value="__new__">+ Nuevo responsable…</option>
+                </select>
+              )}
             </div>
             <div className="field">
               <label>Estatus</label>
@@ -670,9 +732,12 @@ function Drawer({ task, onChange, onClose, onDelete }){
 /* ----------------------------- app ----------------------------- */
 function App({ authUser, onLogout }){
   const _local = loadLocal();
-  const [tasks, setTasks] = useState(() => (_local && _local.tasks) || SEED);
+  const _seed0 = (_local && _local.tasks) || SEED;
+  const [tasks, setTasks] = useState(() => _seed0);
   const [groupBy, setGroupBy] = useState((_local && _local.config && _local.config.groupBy) || "nivel");
   const [zoom, setZoom] = useState((_local && _local.config && _local.config.zoom) || "mes");
+  const [owners, setOwners] = useState(() =>
+    (_local && _local.config && _local.config.owners) || [...new Set(_seed0.map(t => t.owner).filter(Boolean))].sort());
   const [query, setQuery] = useState("");
   const [statusF, setStatusF] = useState(()=> new Set());
   const [onlyNew, setOnlyNew] = useState(false);
@@ -680,8 +745,16 @@ function App({ authUser, onLogout }){
   const [selId, setSelId] = useState(null);
   const [toast, setToast] = useState(null);
   const [resetOpen, setResetOpen] = useState(false);
+  const [history, setHistory] = useState([]);          // pila de undo (#7)
   const [sync, setSync] = useState(sb ? "connecting" : "local"); // connecting|synced|saving|error|local
   const hydrated = useRef(false);
+  const tasksRef = useRef(tasks); tasksRef.current = tasks;
+  const editSnap = useRef(null);    // sesión de edición del drawer (#7)
+  const lastNudge = useRef(0);      // coalescer nudges de teclado (#7/#9)
+  const ganttRef = useRef(null);    // contenedor con scroll del gantt (#10)
+  const undoRef = useRef(()=>{});
+  const pushHistory = (snapshot)=> setHistory(h => [...h.slice(-29), snapshot]);
+  const addOwner = (name)=> setOwners(o => o.includes(name) ? o : [...o, name].sort());
 
   /* hidratar desde Supabase al abrir (si no hay fila, sube el estado actual) */
   useEffect(()=>{
@@ -692,13 +765,14 @@ function App({ authUser, onLogout }){
       if(cancelled) return;
       if(res.ok && res.data && Array.isArray(res.data.tasks)){
         setTasks(res.data.tasks);
-        if(res.data.config){
-          if(res.data.config.groupBy) setGroupBy(res.data.config.groupBy);
-          if(res.data.config.zoom) setZoom(res.data.config.zoom);
-        }
+        const cfg = res.data.config || {};
+        if(cfg.groupBy) setGroupBy(cfg.groupBy);
+        if(cfg.zoom) setZoom(cfg.zoom);
+        setOwners(cfg.owners && cfg.owners.length ? cfg.owners
+          : [...new Set(res.data.tasks.map(t=>t.owner).filter(Boolean))].sort());
         setSync("synced");
       } else if(res.ok && !res.data){
-        const up = await saveRemote({ tasks, config:{ groupBy, zoom } });
+        const up = await saveRemote({ tasks, config:{ groupBy, zoom, owners } });
         setSync(up.ok ? "synced" : "error");
       } else {
         console.warn("Supabase no disponible:", res.error);
@@ -711,24 +785,52 @@ function App({ authUser, onLogout }){
 
   /* guardar: siempre a local; a Supabase (con debounce) tras la hidratación */
   useEffect(()=>{
-    const state = { tasks, config:{ groupBy, zoom } };
+    const state = { tasks, config:{ groupBy, zoom, owners } };
     saveLocal(state);
     if(!sb || !hydrated.current) return;
     let cancelled = false;
-    setSync(s => s === "error" ? "saving" : (s === "synced" ? "saving" : s));
+    setSync(s => (s === "error" || s === "synced") ? "saving" : s);
     const h = setTimeout(async ()=>{
       const up = await saveRemote(state);
       if(!cancelled) setSync(up.ok ? "synced" : "error");
     }, 600);
     return ()=>{ cancelled = true; clearTimeout(h); };
-  }, [tasks, groupBy, zoom]);
+  }, [tasks, groupBy, zoom, owners]);
 
+  const flash = (m)=>{ setToast(m); setTimeout(()=> setToast(null), 1900); };
+
+  /* #2 — recargar del servidor al volver el foco (evita pisar con datos viejos) */
   useEffect(()=>{
-    const onKey = (e)=>{ if(e.key === "Escape") setSelId(null); };
+    if(!sb) return;
+    const refresh = async ()=>{
+      if(document.visibilityState !== "visible" || !hydrated.current || drag.current) return;
+      const res = await loadRemote();
+      if(res.ok && res.data && Array.isArray(res.data.tasks)){
+        if(JSON.stringify(res.data.tasks) !== JSON.stringify(tasksRef.current)){
+          setTasks(res.data.tasks);
+          const cfg = res.data.config || {};
+          if(cfg.groupBy) setGroupBy(cfg.groupBy);
+          if(cfg.zoom) setZoom(cfg.zoom);
+          if(cfg.owners && cfg.owners.length) setOwners(cfg.owners);
+          flash("Actualizado con los últimos cambios");
+        }
+        setSync("synced");
+      }
+    };
+    document.addEventListener("visibilitychange", refresh);
+    window.addEventListener("focus", refresh);
+    return ()=>{ document.removeEventListener("visibilitychange", refresh); window.removeEventListener("focus", refresh); };
+  }, []);
+
+  /* teclado global: Esc cierra · Cmd/Ctrl+Z deshace (#7) */
+  useEffect(()=>{
+    const onKey = (e)=>{
+      if(e.key === "Escape"){ editSnap.current = null; setSelId(null); }
+      else if((e.metaKey || e.ctrlKey) && (e.key === "z" || e.key === "Z")){ e.preventDefault(); undoRef.current(); }
+    };
     window.addEventListener("keydown", onKey);
     return ()=> window.removeEventListener("keydown", onKey);
   },[]);
-  const flash = (m)=>{ setToast(m); setTimeout(()=> setToast(null), 1900); };
 
   const ppd = PX[zoom];
 
@@ -822,6 +924,8 @@ function App({ authUser, onLogout }){
     }));
   }, []);
   const endDrag = useCallback(()=>{
+    const d = drag.current;
+    if(d && moved.current && d.snapshot) pushHistory(d.snapshot);  // (#7) un paso de undo por arrastre
     drag.current = null;
     window.removeEventListener("pointermove", onMove);
     window.removeEventListener("pointerup", endDrag);
@@ -831,29 +935,59 @@ function App({ authUser, onLogout }){
     if(e.button != null && e.button !== 0) return;
     e.preventDefault(); e.stopPropagation();
     moved.current = false;
-    drag.current = { id:task.id, mode, startX:e.clientX, s:parse(task.start), e:parse(task.end), ppd };
+    drag.current = { id:task.id, mode, startX:e.clientX, s:parse(task.start), e:parse(task.end), ppd, snapshot: tasksRef.current };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", endDrag);
     document.body.classList.add("dragging");
   };
-  const clickBar = (id)=>{ if(moved.current){ moved.current = false; return; } setSelId(id); };
+  const selectTask = (id)=>{ editSnap.current = null; setSelId(id); };
+  const closeDrawer = ()=>{ editSnap.current = null; setSelId(null); };
+  const clickBar = (id)=>{ if(moved.current){ moved.current = false; return; } selectTask(id); };
 
   /* ------- mutations ------- */
-  const patch = (next)=> setTasks(ts => ts.map(tk => tk.id === next.id ? next : tk));
-  const del = (id)=>{ setTasks(ts => ts.filter(tk=>tk.id!==id)); setSelId(null); flash("Acción eliminada"); };
-  const addTask = ()=>{
-    const start = todayMs(); const id = "u" + Date.now().toString(36);
-    const nt = t(id, "Nueva acción", "", groupBy==="nivel" ? "1" : "1", "Eventos",
-      toISO(start), toISO(start + 7*MS), { owner:"Dirección MKT" });
-    if(groupBy === "canal") nt.canal = "Eventos";
-    setTasks(ts => [...ts, nt]); setSelId(id);
+  const patch = (next)=>{
+    if(editSnap.current === null){ editSnap.current = true; pushHistory(tasksRef.current); } // (#7) snapshot al 1er cambio de la sesión
+    setTasks(ts => ts.map(tk => tk.id === next.id ? next : tk));
   };
+  const del = (id)=>{ pushHistory(tasksRef.current); setTasks(ts => ts.filter(tk=>tk.id!==id)); closeDrawer(); flash("Acción eliminada"); };
+  const addTask = ()=>{
+    pushHistory(tasksRef.current);
+    const start = todayMs(); const id = "u" + Date.now().toString(36);
+    const nt = t(id, "Nueva acción", "", "1", "Eventos", toISO(start), toISO(start + 7*MS), { owner: owners[0] || "Dirección MKT" });
+    setTasks(ts => [...ts, nt]); selectTask(id);
+  };
+  /* #7/#9 — reprogramar con teclado, coalescido en un paso de undo */
+  const nudge = (id, ds, de)=>{
+    const now = Date.now();
+    if(now - lastNudge.current > 700) pushHistory(tasksRef.current);
+    lastNudge.current = now;
+    setTasks(ts => ts.map(tk=>{
+      if(tk.id !== id) return tk;
+      if(tk.milestone){ const nv = parse(tk.start) + ds*MS; return { ...tk, start: toISO(nv), end: toISO(nv) }; }
+      let s = parse(tk.start) + ds*MS, e = parse(tk.end) + de*MS;
+      if(e < s) e = s;
+      return { ...tk, start: toISO(s), end: toISO(e) };
+    }));
+  };
+  const onBarKey = (e, tk)=>{
+    if(e.key === "Enter" || e.key === " "){ e.preventDefault(); selectTask(tk.id); }
+    else if(e.key === "ArrowLeft"){ e.preventDefault(); const n = e.shiftKey?7:1; nudge(tk.id,-n,-n); }
+    else if(e.key === "ArrowRight"){ e.preventDefault(); const n = e.shiftKey?7:1; nudge(tk.id,n,n); }
+  };
+  /* #7 — deshacer */
+  const undo = ()=>{
+    if(!history.length) return;
+    const prev = history[history.length-1];
+    setHistory(h => h.slice(0,-1));
+    setTasks(prev); editSnap.current = null; setSelId(null); flash("Deshecho");
+  };
+  undoRef.current = undo;
   const toggleStatus = (s)=> setStatusF(prev => { const n = new Set(prev); n.has(s) ? n.delete(s) : n.add(s); return n; });
   const toggleGroup = (k)=> setCollapsed(prev => { const n = new Set(prev); n.has(k) ? n.delete(k) : n.add(k); return n; });
   const allKeys = groups.map(g => g.key);
   const allCollapsed = allKeys.length > 0 && allKeys.every(k => collapsed.has(k));
   const toggleAll = ()=> setCollapsed(allCollapsed ? new Set() : new Set(allKeys));
-  const doReset = ()=>{ setTasks(SEED); setSelId(null); setResetOpen(false); flash("Plan restablecido"); };
+  const doReset = ()=>{ pushHistory(tasksRef.current); setTasks(SEED); closeDrawer(); setResetOpen(false); flash("Plan restablecido"); };
 
   /* ------- export ------- */
   const download = (name, text, type)=>{
@@ -861,13 +995,37 @@ function App({ authUser, onLogout }){
     const a = document.createElement("a"); a.href = url; a.download = name; a.click();
     setTimeout(()=> URL.revokeObjectURL(url), 500);
   };
+  const exportRows = ()=> tasks.map(tk => ({
+    "Acción": tk.name, "Nivel": NIVELES[tk.nivel]?.label||tk.nivel, "Canal": tk.canal,
+    "Inicio": tk.start, "Fin": tk.end, "Días": diffDays(parse(tk.start),parse(tk.end))+1,
+    "Avance": tk.progress+"%", "Responsable": tk.owner, "Estatus": STATUS[tk.status]?.label||tk.status,
+    "Idea nueva": tk.nuevo?"sí":"no",
+  }));
   const exportCSV = ()=>{
-    const head = ["id","accion","nivel","canal","inicio","fin","dias","avance","responsable","estatus","idea_nueva"];
+    const cols = Object.keys(exportRows()[0] || {});
     const esc = (v)=>{ const s = String(v ?? ""); return /[",\n;]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; };
-    const rows = tasks.map(tk => [tk.id, tk.name, NIVELES[tk.nivel]?.label||tk.nivel, tk.canal, tk.start, tk.end,
-      diffDays(parse(tk.start),parse(tk.end))+1, tk.progress+"%", tk.owner, STATUS[tk.status]?.label||tk.status, tk.nuevo?"sí":"no"].map(esc).join(","));
-    download("gantt-innova.csv", [head.join(","), ...rows].join("\n"), "text/csv;charset=utf-8");
+    const lines = [cols.join(","), ...exportRows().map(r => cols.map(c => esc(r[c])).join(","))];
+    download("gantt-innova.csv", lines.join("\n"), "text/csv;charset=utf-8");
     flash("CSV exportado");
+  };
+  const exportXLSX = ()=>{    // #5 — Excel real
+    if(!window.XLSX){ exportCSV(); return; }
+    const ws = window.XLSX.utils.json_to_sheet(exportRows());
+    ws["!cols"] = [{wch:42},{wch:28},{wch:20},{wch:12},{wch:12},{wch:7},{wch:9},{wch:18},{wch:12},{wch:11}];
+    const wb = window.XLSX.utils.book_new();
+    window.XLSX.utils.book_append_sheet(wb, ws, "Plan");
+    window.XLSX.writeFile(wb, "gantt-innova.xlsx");
+    flash("Excel exportado");
+  };
+  const exportPDF = ()=>{    // #5 — imprimir / guardar como PDF
+    setCollapsed(new Set());
+    flash("Preparando impresión…");
+    setTimeout(()=> window.print(), 300);
+  };
+  const goToday = ()=>{    // #10 — ir a hoy
+    const g = ganttRef.current; if(!g) return;
+    const target = Math.max(0, x(Math.max(tToday, domain.start)) - 100);
+    g.scrollTo({ left: target, behavior: "smooth" });
   };
 
   const sel = tasks.find(tk => tk.id === selId) || null;
@@ -894,7 +1052,9 @@ function App({ authUser, onLogout }){
       <div className="kpis">
         <div className="kpi"><span className="v">{kpi.total}</span><span className="l">Acciones</span></div>
         <div className="kpi"><span className="v">{kpi.nuevas}</span><span className="l">Ideas nuevas</span></div>
-        <div className="kpi"><span className="v">{kpi.avance}%</span><span className="l">Avance ponderado</span></div>
+        <div className="kpi"><span className="v">{kpi.avance}%</span><span className="l">Avance ponderado</span>
+          <div className="kmeter"><div style={{ width: kpi.avance + "%" }} /></div>
+        </div>
         <div className="kpi"><span className="v">{kpi.revisar}</span><span className="l">A revisar</span></div>
         <div className="kpi range"><span className="v">{`${fmtShort(domain.start)} '${String(new Date(domain.start).getUTCFullYear()).slice(2)} – ${fmtShort(domain.end)} '${String(new Date(domain.end).getUTCFullYear()).slice(2)}`}</span><span className="l">Horizonte</span></div>
         <div className="legend">
@@ -918,12 +1078,16 @@ function App({ authUser, onLogout }){
           <span className="sw" style={{background:"var(--accent)"}}/> Solo ideas nuevas
         </button>
         <div className="spacer" />
+        <button className="btn ghost" onClick={goToday} title="Ir a hoy en el calendario">Hoy</button>
+        <button className="btn ghost icon" onClick={undo} disabled={!history.length} title="Deshacer (Ctrl/Cmd+Z)" aria-label="Deshacer">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-1"/></svg>
+        </button>
         <span className="syncpill" title="Estado de sincronización con Supabase">
           <span className="sw" style={{background:(SYNC_UI[sync]||SYNC_UI.local).hex}}/>
           {(SYNC_UI[sync]||SYNC_UI.local).label}
         </span>
         <button className="btn primary" onClick={addTask}>+ Acción</button>
-        <button className="btn icon" onClick={exportCSV} title="Exportar a Excel (CSV)" aria-label="Exportar a Excel (CSV)">
+        <button className="btn icon" onClick={exportXLSX} title="Exportar a Excel (.xlsx)" aria-label="Exportar a Excel">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#107C41" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
             <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
@@ -931,6 +1095,14 @@ function App({ authUser, onLogout }){
             <path d="M8 17h2"/>
             <path d="M14 13h2"/>
             <path d="M14 17h2"/>
+          </svg>
+        </button>
+        <button className="btn icon" onClick={exportPDF} title="Exportar a PDF (imprimir)" aria-label="Exportar a PDF">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#b3402f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/>
+            <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+            <path d="M9 13h6"/>
+            <path d="M9 17h4"/>
           </svg>
         </button>
       </div>
@@ -945,7 +1117,7 @@ function App({ authUser, onLogout }){
         {statusF.size>0 && <button className="btn ghost" onClick={()=>setStatusF(new Set())}>Limpiar</button>}
       </div>
 
-      <div className="gantt">
+      <div className="gantt" ref={ganttRef}>
         <div className="inner" style={{ width: `calc(var(--leftW) + ${width}px)` }}>
           {/* gridlines + today behind everything */}
           <div className="grid" style={{ left:"var(--leftW)", width: width }}>
@@ -1005,7 +1177,7 @@ function App({ authUser, onLogout }){
                   const otherDim = groupBy === "nivel" ? tk.canal : ("N" + tk.nivel === "Nsprint" ? "Sprint" : "Nivel "+tk.nivel);
                   return (
                     <div className={"row" + (isSel ? " sel" : "")} key={tk.id}>
-                      <div className="rl" title={tk.detail} onClick={()=>setSelId(tk.id)}>
+                      <div className="rl" title={tk.detail} onClick={()=>selectTask(tk.id)}>
                         <span className="sdot" style={{ background: STATUS[tk.status].hex }} title={STATUS[tk.status].label} />
                         <div className="rlc">
                           <div className="rline1">
@@ -1023,14 +1195,17 @@ function App({ authUser, onLogout }){
                         {tk.milestone ? (
                           <React.Fragment>
                             <div className={"mile" + (isSel?" sel":"")} style={{ left, "--c": c }}
-                              title={`${tk.name} · ${fmtLong(s)}`}
+                              tabIndex={0} role="button" aria-label={`${tk.name}, hito ${fmtLong(s)}. Flechas para mover, Enter para editar.`}
+                              title={`${tk.name} · ${fmtLong(s)}`} onKeyDown={(e)=>onBarKey(e, tk)}
                               onPointerDown={(e)=>startDrag(e, tk, "move")} onClick={()=>clickBar(tk.id)} />
                             <span className="milelabel" style={{ left: left + 14 }}>{tk.name}</span>
                           </React.Fragment>
                         ) : (
                           <div className={"bar" + (isSel?" sel":"") + (tk.status==="review"?" review":"")}
                             style={{ left, width: w, "--c": c }}
+                            tabIndex={0} role="button" aria-label={`${tk.name}, ${fmtShort(s)} a ${fmtShort(e)}, ${tk.progress}%. Flechas para reprogramar, Enter para editar.`}
                             title={`${tk.name}\n${fmtShort(s)} – ${fmtShort(e)} · ${diffDays(s,e)+1} días\n${tk.owner} · ${STATUS[tk.status].label} · ${tk.progress}%`}
+                            onKeyDown={(e)=>onBarKey(e, tk)}
                             onPointerDown={(e)=>startDrag(e, tk, "move")} onClick={()=>clickBar(tk.id)}>
                             <div className="fill" style={{ width: tk.progress + "%" }} />
                             {tk.nuevo && <span className="nu" />}
@@ -1051,7 +1226,8 @@ function App({ authUser, onLogout }){
 
       <div className="hint">
         <span><kbd>Arrastra</kbd> el centro de una barra para reprogramar · <kbd>bordes</kbd> para cambiar duración</span>
-        <span><kbd>Clic</kbd> abre el editor · pasa el cursor sobre una fila para <kbd>quitarla</kbd> · <kbd>Esc</kbd> cierra</span>
+        <span>Con una barra enfocada: <kbd>← →</kbd> mueve (<kbd>Shift</kbd> = 1 semana) · <kbd>Enter</kbd> edita · <kbd>Ctrl/Cmd+Z</kbd> deshace</span>
+        <span><kbd>Clic</kbd> abre el editor · papelera al pasar el cursor sobre una fila · <kbd>Esc</kbd> cierra</span>
         <span>Cambios guardados automáticamente (Supabase + respaldo local)</span>
       </div>
 
@@ -1059,7 +1235,7 @@ function App({ authUser, onLogout }){
         <button className="btn danger-ghost" onClick={()=>setResetOpen(true)}>Restablecer plan original</button>
       </div>
 
-      <Drawer task={sel} onChange={patch} onClose={()=>setSelId(null)} onDelete={del} />
+      {sel && <Drawer key={sel.id} task={sel} owners={owners} onAddOwner={addOwner} onChange={patch} onClose={closeDrawer} onDelete={del} />}
       {resetOpen && <ResetModal onClose={()=>setResetOpen(false)} onConfirm={doReset} />}
       {toast && <div className="toast">{toast}</div>}
     </div>
