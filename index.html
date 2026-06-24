@@ -1,0 +1,822 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Gantt · Estrategia de Marketing — Grupo Innova</title>
+
+<!--
+  Gantt interactivo · Estrategia de Marketing Grupo Innova
+  ------------------------------------------------------------------
+  SUPUESTOS (editables todos dentro de la herramienta):
+  - El único bloque con fechas duras en el documento es el Plan Maestro
+    de 4 semanas (Open House Cluster Borgoña, 24-jun → 19-jul 2026).
+  - Los Niveles 1–5 del Plan de Acción están priorizados por ROI, NO por
+    fecha. Aquí se les asignó una ventana sugerida derivada de su prioridad
+    (N1 inmediato, N2–N3 trimestres siguientes, etc.). Ajusta arrastrando.
+  - "nuevo" marca las 7 ideas con mayor potencial del documento.
+  Persistencia: localStorage. "Restablecer" vuelve al plan original.
+-->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js" crossorigin></script>
+
+<style>
+  :root{
+    --bg: oklch(0.975 0.0025 80);
+    --surface: #ffffff;
+    --surface-2: oklch(0.955 0.003 80);
+    --surface-3: oklch(0.935 0.004 78);
+    --ink: oklch(0.205 0.008 60);
+    --ink-2: oklch(0.40 0.008 60);
+    --ink-3: oklch(0.52 0.008 60);
+    --line: oklch(0.905 0.003 80);
+    --line-2: oklch(0.85 0.004 78);
+    --accent: oklch(0.56 0.13 38);
+    --accent-ink: oklch(0.47 0.12 38);
+    --accent-wash: oklch(0.95 0.028 42);
+
+    --n-sprint: #b85c3f;
+    --n-1: #2f5d4a;
+    --n-2: #2c5670;
+    --n-3: #9a6f2e;
+    --n-4: #7a3340;
+    --n-5: #6f6a62;
+
+    --leftW: 336px;
+    --rowH: 44px;
+    --barH: 22px;
+    --headH: 56px;
+
+    /* semantic z-scale */
+    --z-grid: 0;
+    --z-today: 1;
+    --z-row: 2;
+    --z-bar: 3;
+    --z-left: 6;
+    --z-head: 8;
+    --z-corner: 10;
+    --z-drawer: 40;
+    --z-toast: 60;
+
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; height:100%; }
+  body{
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Hanken Grotesk", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "ss01";
+  }
+  body.dragging{ cursor: grabbing; user-select:none; }
+  body.dragging *{ cursor: grabbing !important; }
+
+  #root{ min-height:100%; }
+  .wrap{ max-width: 1320px; margin: 0 auto; padding: 28px 28px 56px; }
+
+  /* ---------- masthead ---------- */
+  .mast{ display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex-wrap:wrap;
+    padding-bottom:18px; border-bottom:1px solid var(--line-2); }
+  .mast .id{ display:flex; flex-direction:column; gap:6px; }
+  .wordmark{ font-family:"Fraunces", serif; font-weight:600; letter-spacing:-0.02em;
+    font-size: 13px; text-transform:uppercase; color:var(--accent-ink); }
+  .wordmark b{ letter-spacing:0.34em; }
+  .mast h1{ font-family:"Fraunces", serif; font-weight:500; letter-spacing:-0.02em;
+    font-size: clamp(1.7rem, 1.2rem + 1.8vw, 2.6rem); line-height:1.02; margin:0; text-wrap:balance; }
+  .mast .sub{ color:var(--ink-2); font-size:14px; max-width:54ch; line-height:1.45; }
+  .mast .meta{ text-align:right; color:var(--ink-3); font-family:"Spline Sans Mono", monospace;
+    font-size:11.5px; line-height:1.7; letter-spacing:0.02em; }
+  .mast .meta b{ color:var(--ink-2); font-weight:500; }
+
+  /* ---------- kpi strip ---------- */
+  .kpis{ display:flex; align-items:center; gap:0; flex-wrap:wrap; margin:18px 0 14px;
+    border:1px solid var(--line); border-radius:14px; background:var(--surface); overflow:hidden; }
+  .kpi{ padding:13px 20px; display:flex; flex-direction:column; gap:3px; flex:1 1 auto; min-width:120px;
+    border-right:1px solid var(--line); }
+  .kpi:last-child{ border-right:none; }
+  .kpi .v{ font-family:"Fraunces",serif; font-weight:600; font-size:22px; letter-spacing:-0.01em;
+    font-variant-numeric: tabular-nums; }
+  .kpi .l{ font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:0.07em; }
+  .kpi.range .v{ font-size:15px; font-family:"Spline Sans Mono",monospace; font-weight:500; }
+  .legend{ display:flex; gap:14px; padding:13px 20px; flex-wrap:wrap; align-items:center; }
+  .legend .dot{ display:inline-flex; align-items:center; gap:7px; font-size:11.5px; color:var(--ink-2); }
+  .legend .sw{ width:11px; height:11px; border-radius:3px; }
+
+  /* ---------- toolbar ---------- */
+  .toolbar{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px; }
+  .search{ position:relative; flex:1 1 220px; min-width:180px; max-width:340px; }
+  .search input{ width:100%; padding:9px 12px 9px 32px; border:1px solid var(--line-2); border-radius:9px;
+    background:var(--surface); font:inherit; font-size:13.5px; color:var(--ink); }
+  .search svg{ position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--ink-3); }
+  .search input::placeholder{ color:var(--ink-3); }
+  .search input:focus-visible{ outline:2px solid var(--accent); outline-offset:1px; border-color:transparent; }
+
+  .seg{ display:inline-flex; border:1px solid var(--line-2); border-radius:9px; overflow:hidden; background:var(--surface); }
+  .seg button{ border:none; background:transparent; font:inherit; font-size:13px; padding:8px 13px; cursor:pointer;
+    color:var(--ink-2); border-right:1px solid var(--line); transition: background .15s var(--ease), color .15s var(--ease); }
+  .seg button:last-child{ border-right:none; }
+  .seg button[aria-pressed="true"]{ background:var(--ink); color:#fff; }
+  .seg button:hover:not([aria-pressed="true"]){ background:var(--surface-2); }
+
+  .label{ font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:0.06em; margin:0 2px 0 6px; }
+
+  .chip{ border:1px solid var(--line-2); background:var(--surface); border-radius:999px; padding:6px 12px;
+    font:inherit; font-size:12.5px; cursor:pointer; color:var(--ink-2); display:inline-flex; align-items:center; gap:6px;
+    transition: background .15s var(--ease), border-color .15s; }
+  .chip .sw{ width:9px; height:9px; border-radius:50%; }
+  .chip[aria-pressed="true"]{ background:var(--ink); color:#fff; border-color:var(--ink); }
+  .chip:hover:not([aria-pressed="true"]){ background:var(--surface-2); }
+
+  .btn{ border:1px solid var(--line-2); background:var(--surface); border-radius:9px; padding:8px 13px;
+    font:inherit; font-size:13px; cursor:pointer; color:var(--ink); display:inline-flex; align-items:center; gap:6px;
+    transition: background .15s var(--ease), border-color .15s, transform .06s; }
+  .btn:hover{ background:var(--surface-2); }
+  .btn:active{ transform:translateY(1px); }
+  .btn.primary{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .btn.primary:hover{ background:var(--accent-ink); }
+  .btn.ghost{ border-color:transparent; background:transparent; color:var(--ink-3); }
+  .btn.ghost:hover{ color:var(--ink); background:var(--surface-2); }
+  .spacer{ flex:1 1 auto; }
+
+  /* ---------- gantt ---------- */
+  .gantt{ border:1px solid var(--line-2); border-radius:14px; background:var(--surface);
+    overflow:auto; max-height: 64vh; position:relative; box-shadow: 0 1px 0 rgba(0,0,0,0.02); }
+  .inner{ position:relative; }
+
+  .head{ position:sticky; top:0; display:flex; z-index:var(--z-head); height:var(--headH); }
+  .head .corner{ position:sticky; left:0; z-index:var(--z-corner); width:var(--leftW); flex:0 0 var(--leftW);
+    background:var(--surface); border-right:1px solid var(--line-2); border-bottom:1px solid var(--line-2);
+    display:flex; align-items:flex-end; padding:0 16px 9px; }
+  .head .corner span{ font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:0.08em; }
+  .head .timehead{ position:relative; border-bottom:1px solid var(--line-2); background:var(--surface); }
+  .month{ position:absolute; top:0; bottom:0; border-left:1px solid var(--line); display:flex; flex-direction:column;
+    justify-content:flex-end; padding:0 0 8px 9px; }
+  .month b{ font-family:"Spline Sans Mono",monospace; font-size:11.5px; font-weight:500; color:var(--ink-2);
+    text-transform:uppercase; letter-spacing:0.04em; }
+  .month i{ font-style:normal; font-size:10px; color:var(--ink-3); }
+  .month.q::before{ content:""; }
+
+  .grid{ position:absolute; top:0; bottom:0; z-index:var(--z-grid); pointer-events:none; }
+  .gline{ position:absolute; top:0; bottom:0; width:1px; background:var(--line); }
+  .gline.month{ background:var(--line-2); border:none; padding:0; }
+  .gline.week{ background:var(--line); opacity:.55; }
+  .todayline{ position:absolute; top:0; bottom:0; width:2px; background:var(--accent); z-index:var(--z-today); pointer-events:none; }
+  .todaytag{ position:sticky; }
+
+  .grp{ display:flex; align-items:stretch; background:var(--surface-2); }
+  .grp .gl{ position:sticky; left:0; z-index:var(--z-left); width:var(--leftW); flex:0 0 var(--leftW);
+    background:var(--surface-2); border-right:1px solid var(--line-2); border-bottom:1px solid var(--line);
+    display:flex; align-items:center; gap:9px; padding:0 14px; height:40px; cursor:pointer; }
+  .grp .caret{ transition: transform .18s var(--ease); color:var(--ink-3); display:flex; }
+  .grp.collapsed .caret{ transform: rotate(-90deg); }
+  .grp .gname{ font-family:"Fraunces",serif; font-weight:600; font-size:13.5px; letter-spacing:-0.01em; color:var(--ink);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .grp .gswatch{ width:10px; height:10px; border-radius:3px; flex:0 0 auto; }
+  .grp .gcount{ font-size:11px; color:var(--ink-3); font-variant-numeric:tabular-nums; margin-left:auto;
+    font-family:"Spline Sans Mono",monospace; }
+  .grp .gt{ position:relative; border-bottom:1px solid var(--line); }
+  .rollup{ position:absolute; top:50%; transform:translateY(-50%); height:6px; border-radius:3px; opacity:.55; }
+
+  .row{ display:flex; align-items:stretch; }
+  .row .rl{ position:sticky; left:0; z-index:var(--z-left); width:var(--leftW); flex:0 0 var(--leftW);
+    background:var(--surface); border-right:1px solid var(--line-2); border-bottom:1px solid var(--line);
+    display:flex; align-items:center; gap:9px; padding:0 14px 0 30px; height:var(--rowH); cursor:pointer; }
+  .row:hover .rl{ background:var(--surface-2); }
+  .row.sel .rl{ background:var(--accent-wash); }
+  .rlc{ display:flex; flex-direction:column; gap:2px; min-width:0; flex:1 1 auto; }
+  .rline1{ display:flex; align-items:center; gap:6px; min-width:0; }
+  .rl .rname{ font-size:13px; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    flex:0 1 auto; min-width:0; }
+  .sdot{ width:8px; height:8px; border-radius:50%; flex:0 0 auto; }
+  .newtag{ font-size:8.5px; font-weight:700; letter-spacing:0.06em; color:#fff; background:var(--accent);
+    border-radius:4px; padding:2px 5px; text-transform:uppercase; flex:0 0 auto; }
+  .rl .rsub{ font-size:10.5px; color:var(--ink-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  .row .rt{ position:relative; border-bottom:1px solid var(--line); }
+  .row:hover .rt{ background: color-mix(in oklch, var(--surface-2) 55%, transparent); }
+  .row.sel .rt{ background: color-mix(in oklch, var(--accent-wash) 50%, transparent); }
+
+  .bar{ position:absolute; top:50%; transform:translateY(-50%); height:var(--barH);
+    background: color-mix(in srgb, var(--c) 18%, white);
+    border:1px solid color-mix(in srgb, var(--c) 46%, white);
+    border-radius:7px; cursor:grab; overflow:hidden; min-width:8px;
+    transition: box-shadow .15s var(--ease); }
+  .bar:hover{ box-shadow: 0 4px 14px -4px color-mix(in srgb, var(--c) 60%, transparent); }
+  .bar.sel{ outline:2px solid var(--c); outline-offset:1px; }
+  .bar.review{ border-style:dashed; opacity:.72; }
+  .bar .fill{ position:absolute; left:0; top:0; bottom:0; background:var(--c); opacity:.9; border-radius:6px 0 0 6px; }
+  .bar .pct{ position:absolute; right:6px; top:50%; transform:translateY(-50%); font-size:10px;
+    font-family:"Spline Sans Mono",monospace; color: color-mix(in srgb, var(--c) 78%, black); font-weight:500; }
+  .bar .edge{ position:absolute; top:0; bottom:0; width:7px; cursor:ew-resize; z-index:2; }
+  .bar .edge.l{ left:0; } .bar .edge.r{ right:0; }
+  .bar .nu{ position:absolute; left:-1px; top:-1px; width:0; height:0;
+    border-top:8px solid var(--accent); border-right:8px solid transparent; }
+
+  .mile{ position:absolute; top:50%; width:16px; height:16px; transform:translate(-50%,-50%) rotate(45deg);
+    background:var(--c); border:1px solid color-mix(in srgb,var(--c) 60%, black); cursor:grab; border-radius:3px; }
+  .mile.sel{ outline:2px solid var(--c); outline-offset:2px; }
+  .milelabel{ position:absolute; top:50%; transform:translateY(-50%); font-size:11px; color:var(--ink-2);
+    white-space:nowrap; font-weight:600; }
+
+  .empty{ padding:48px 24px; text-align:center; color:var(--ink-3); }
+  .empty b{ display:block; font-family:"Fraunces",serif; color:var(--ink-2); font-size:16px; margin-bottom:4px; }
+
+  .hint{ margin-top:12px; font-size:12px; color:var(--ink-3); display:flex; gap:18px; flex-wrap:wrap; align-items:center; }
+  .hint kbd{ font-family:"Spline Sans Mono",monospace; font-size:11px; background:var(--surface-2);
+    border:1px solid var(--line); border-radius:5px; padding:1px 6px; color:var(--ink-2); }
+
+  /* ---------- drawer ---------- */
+  .scrim{ position:fixed; inset:0; background:rgba(28,24,20,0.28); z-index:var(--z-drawer); opacity:0;
+    animation: fade .2s var(--ease) forwards; }
+  .drawer{ position:fixed; top:0; right:0; bottom:0; width:min(420px, 94vw); background:var(--surface);
+    z-index:calc(var(--z-drawer) + 1); box-shadow:-18px 0 50px -24px rgba(0,0,0,0.4); display:flex; flex-direction:column;
+    transform:translateX(100%); animation: slidein .28s var(--ease) forwards; }
+  @keyframes fade{ to{ opacity:1; } }
+  @keyframes slidein{ to{ transform:translateX(0); } }
+  .drawer header{ padding:20px 22px 14px; border-bottom:1px solid var(--line); display:flex; align-items:flex-start; gap:12px; }
+  .drawer header .dband{ width:5px; align-self:stretch; border-radius:3px; }
+  .drawer header h3{ margin:0; font-family:"Fraunces",serif; font-weight:600; font-size:17px; letter-spacing:-0.01em; line-height:1.2; }
+  .drawer header .x{ margin-left:auto; }
+  .dbody{ overflow:auto; padding:18px 22px 26px; display:flex; flex-direction:column; gap:16px; }
+  .field{ display:flex; flex-direction:column; gap:6px; }
+  .field > label{ font-size:11px; color:var(--ink-3); text-transform:uppercase; letter-spacing:0.06em; }
+  .field input, .field select, .field textarea{ font:inherit; font-size:13.5px; color:var(--ink);
+    border:1px solid var(--line-2); border-radius:8px; padding:9px 10px; background:var(--surface); width:100%; }
+  .field textarea{ resize:vertical; min-height:70px; line-height:1.5; }
+  .field input:focus-visible, .field select:focus-visible, .field textarea:focus-visible{
+    outline:2px solid var(--accent); outline-offset:1px; border-color:transparent; }
+  .two{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .rangerow{ display:flex; align-items:center; gap:12px; }
+  .rangerow input[type=range]{ flex:1; accent-color:var(--accent); }
+  .rangerow .pv{ font-family:"Spline Sans Mono",monospace; font-size:13px; width:46px; text-align:right; color:var(--ink-2); }
+  .dur{ font-size:12px; color:var(--ink-3); }
+  .check{ display:flex; align-items:center; gap:9px; font-size:13.5px; color:var(--ink); cursor:pointer; }
+  .check input{ width:16px; height:16px; accent-color:var(--accent); }
+  .drawer footer{ margin-top:auto; padding:14px 22px; border-top:1px solid var(--line); display:flex; gap:10px; }
+  .btn.danger{ color:#fff; background:#b3402f; border-color:#b3402f; }
+  .btn.danger:hover{ background:#9a3526; }
+
+  .toast{ position:fixed; bottom:22px; left:50%; transform:translateX(-50%); z-index:var(--z-toast);
+    background:var(--ink); color:#fff; padding:10px 16px; border-radius:10px; font-size:13px;
+    box-shadow:0 10px 30px -10px rgba(0,0,0,0.5); animation: fade .2s var(--ease); }
+
+  @media (max-width: 720px){
+    :root{ --leftW: 210px; }
+    .wrap{ padding:18px 14px 40px; }
+    .kpi{ min-width:96px; padding:11px 14px; }
+    .mast .meta{ text-align:left; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:.001ms !important; transition-duration:.001ms !important; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useRef, useMemo, useEffect, useCallback } = React;
+
+/* ----------------------------- date utils (UTC) ----------------------------- */
+const MS = 86400000;
+const MES_ABBR = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+const parse = (s) => { const [y,m,d] = s.split("-").map(Number); return Date.UTC(y, m-1, d); };
+const toISO = (ms) => { const dt = new Date(ms); const p = (n)=>String(n).padStart(2,"0");
+  return `${dt.getUTCFullYear()}-${p(dt.getUTCMonth()+1)}-${p(dt.getUTCDate())}`; };
+const diffDays = (a,b) => Math.round((b-a)/MS);
+const fmtShort = (ms) => { const dt = new Date(ms); return `${dt.getUTCDate()} ${MES_ABBR[dt.getUTCMonth()]}`; };
+const fmtLong = (ms) => { const dt = new Date(ms); return `${dt.getUTCDate()} ${MES_ABBR[dt.getUTCMonth()]} ${dt.getUTCFullYear()}`; };
+const todayMs = () => { const n = new Date(); return Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()); };
+
+/* ----------------------------- taxonomy ----------------------------- */
+const NIVEL_ORDER = ["sprint","1","2","3","4","5"];
+const NIVELES = {
+  sprint: { label:"Sprint · Open House Borgoña", color:"var(--n-sprint)", hex:"#b85c3f" },
+  "1": { label:"Nivel 1 · Alto impacto inmediato", color:"var(--n-1)", hex:"#2f5d4a" },
+  "2": { label:"Nivel 2 · Impacto estratégico", color:"var(--n-2)", hex:"#2c5670" },
+  "3": { label:"Nivel 3 · Alcance masivo cualificado", color:"var(--n-3)", hex:"#9a6f2e" },
+  "4": { label:"Nivel 4 · Nicho selectivo", color:"var(--n-4)", hex:"#7a3340" },
+  "5": { label:"Nivel 5 · Revisar o eliminar", color:"var(--n-5)", hex:"#6f6a62" },
+};
+const CANAL_ORDER = ["Venta Personal","Publicidad Pagada","Publicidad Orgánica","Relaciones Públicas",
+  "Eventos","E-Marketing","Influencer & Content","Partnerships"];
+const CANALES = {
+  "Venta Personal":{hex:"#5b4b8a"}, "Publicidad Pagada":{hex:"#2c5670"},
+  "Publicidad Orgánica":{hex:"#2f6d54"}, "Relaciones Públicas":{hex:"#b85c3f"},
+  "Eventos":{hex:"#9a6f2e"}, "E-Marketing":{hex:"#5d6b33"},
+  "Influencer & Content":{hex:"#9c3f6a"}, "Partnerships":{hex:"#2f5d4a"},
+};
+const STATUS = {
+  todo:{label:"Por hacer", hex:"#9b958c"}, doing:{label:"En curso", hex:"#2c5670"},
+  done:{label:"Hecho", hex:"#2f6d54"}, review:{label:"Revisar", hex:"#b07d2a"},
+  risk:{label:"En riesgo", hex:"#b3402f"},
+};
+
+/* ----------------------------- seed plan ----------------------------- */
+const t = (id,name,detail,nivel,canal,start,end,opt={}) => ({
+  id, name, detail, nivel, canal, start, end,
+  progress: opt.progress ?? 0, owner: opt.owner ?? "Dirección MKT",
+  status: opt.status ?? "todo", nuevo: !!opt.nuevo, milestone: !!opt.milestone,
+});
+
+const SEED = [
+  // -------- Sprint Open House (fechas reales) --------
+  t("sp1","Activación digital","Video «tour privado» del Cluster Borgoña en Meta + LinkedIn. Pauta $8,000 MXN.","sprint","Publicidad Pagada","2026-06-24","2026-06-27",{progress:60,status:"doing",owner:"Equipo Digital"}),
+  t("sp2","Alianzas express","Confirmar 3–5 marcas de lujo (Porsche, Vuitton, Clinique La Prairie) para difundir.","sprint","Partnerships","2026-06-24","2026-06-30",{progress:40,status:"doing",owner:"Alianzas"}),
+  t("sp3","WhatsApp VIP","Mensaje personalizado a los 300 clientes con invitación exclusiva y código de acceso.","sprint","E-Marketing","2026-06-28","2026-06-30",{progress:10,status:"doing",owner:"Equipo Asesores"}),
+  t("sp4","Invitaciones físicas","Tarjeta premium con QR al video. Entrega en restaurantes y consultorios A+.","sprint","Eventos","2026-07-01","2026-07-07",{owner:"Dirección MKT"}),
+  t("sp5","Brief a brokers","Brief a 50 brokers con comisión especial de cierre. Solo casas Borgoña.","sprint","Venta Personal","2026-07-01","2026-07-05",{owner:"Erika Valadez"}),
+  t("sp6","Contenido de asesores","Cada asesor publica reels «¿Por qué vivir en Borgoña?» en sus cuentas.","sprint","Influencer & Content","2026-07-03","2026-07-07",{owner:"Contenido"}),
+  t("sp7","Retargeting digital","Audiencia que vio el video >50%. Anuncio: «Últimas unidades con entrega inmediata».","sprint","Publicidad Pagada","2026-07-08","2026-07-14",{owner:"Equipo Digital"}),
+  t("sp8","Confirmaciones CRM","Llamada personal de cada asesor a sus prospectos calificados en el CRM.","sprint","Venta Personal","2026-07-08","2026-07-14",{owner:"Equipo Asesores"}),
+  t("sp9","PR del evento","Nota editorial en Maxwell + Instagram Stories con cuenta regresiva.","sprint","Relaciones Públicas","2026-07-10","2026-07-14",{owner:"Agencia PR"}),
+  t("sp10","Experiencia Open House","Catering de autor, música en vivo, tour guiado por casa modelo. No feria: experiencia.","sprint","Eventos","2026-07-18","2026-07-19",{owner:"Dirección MKT"}),
+  t("sp11","Cierre en sitio","Mesa de preventas con condiciones especiales válidas solo durante el evento.","sprint","Venta Personal","2026-07-18","2026-07-19",{owner:"Equipo Asesores"}),
+  t("sp12","Seguimiento 24h","Email + WhatsApp personalizado a cada asistente en las primeras 24 horas.","sprint","E-Marketing","2026-07-19","2026-07-20",{owner:"Equipo Asesores"}),
+
+  // -------- Nivel 1 --------
+  t("n1a","Alianzas con marcas de lujo — eventos en residencias","Llevar al prospecto correcto a la propiedad. Las casas se venden solas.","1","Partnerships","2026-07-20","2026-09-15",{owner:"Alianzas"}),
+  t("n1b","Evento Cayetana Álvarez de Toledo + patrocinadores","Branding de primer nivel. Clave: curar la lista de asistentes, no solo llenar el salón.","1","Eventos","2026-08-15","2026-09-30",{owner:"Dirección MKT"}),
+  t("n1c","Cena maridaje de alta curaduría (Argentilia)","Que paguen los invitados crea filtro automático de calificación y eleva la percepción.","1","Eventos","2026-07-25","2026-08-10",{owner:"Eventos"}),
+  t("n1d","Private sales concierge para UHNWI","Perfil senior, acceso solo por referencia. Sin publicidad. Patrimonio $50M+.","1","Venta Personal","2026-07-15","2026-08-31",{nuevo:true,owner:"Dirección MKT"}),
+  t("n1e","Alianza con family offices y gestoras de patrimonio","Fideapunt, HSBC Premier, GF Bajío. El asesor financiero recomienda Innova como activo alternativo.","1","Partnerships","2026-07-20","2026-09-30",{nuevo:true,owner:"Alianzas"}),
+  t("n1f","Open House Cluster Borgoña","Entrega inmediata = argumento de cierre. Urgencia real. Tráfico cualificado, no masivo.","1","Eventos","2026-07-18","2026-07-18",{milestone:true,owner:"Dirección MKT"}),
+
+  // -------- Nivel 2 --------
+  t("n2a","Concierto Orquesta de Cámara (300 clientes + invitados)","Cada cliente trae una pareja = 300 prospectos en contexto emocional. Sep 2026.","2","Eventos","2026-09-01","2026-09-30",{owner:"Dirección MKT"}),
+  t("n2b","Fashion Fest con Palacio de Hierro + 700 COPARMEX","Lifestyle + empresarios nacionales. La experiencia debe ocurrir dentro del fraccionamiento.","2","Eventos","2026-10-01","2026-11-15",{owner:"Dirección MKT"}),
+  t("n2c","Programa de referidos con comisión (clientes actuales)","300 compradores son embajadores naturales. Comisión 1% sobre venta: $65K–$125K.","2","Publicidad Orgánica","2026-09-01","2026-10-15",{nuevo:true,owner:"Equipo Asesores"}),
+  t("n2d","Alianza con notarios y abogados corporativos","Conocen a quién vendió empresa o recibió herencia: el comprador natural de $10M+.","2","Partnerships","2026-09-15","2026-11-30",{nuevo:true,owner:"Alianzas"}),
+  t("n2e","Desayuno con inversionistas Actinver (50% Innova)","Posicionar Innova como activo de inversión. Argumentos de plusvalía y nearshoring.","2","Partnerships","2026-10-05","2026-10-20",{owner:"Alianzas"}),
+  t("n2f","Red de 50 brokers — enlace Erika Valadez","Los brokers externos aportan prospectos que Innova no alcanza directamente.","2","Venta Personal","2026-09-01","2026-12-15",{owner:"Erika Valadez"}),
+  t("n2g","Club de inversionistas trimestral (20 máx.)","Plusvalía real vs. otros activos. Los clientes traen a sus socios de negocio.","2","Eventos","2026-10-01","2026-12-31",{nuevo:true,owner:"Dirección MKT"}),
+  t("n2h","Revista Maxwell — 32 páginas editoriales","Ampliar distribución: lounges VIP, aviación privada y clubs de golf.","2","Influencer & Content","2026-09-10","2026-11-10",{owner:"Contenido"}),
+
+  // -------- Nivel 3 --------
+  t("n3a","LinkedIn Ads: directores y dueños CDMX/MTY/GDL","Filtros: C-level, empresa 50+ empleados, manufactura y finanzas. Prospecto 10× más calificado que Meta.","3","Publicidad Pagada","2026-10-01","2027-01-31",{nuevo:true,owner:"Equipo Digital"}),
+  t("n3b","Thought leadership en LinkedIn (asesores como expertos)","Los asesores publican análisis de inversión inmobiliaria. Atrae al inversionista que ya investiga.","3","Publicidad Orgánica","2026-10-15","2027-02-28",{owner:"Contenido"}),
+  t("n3c","Campaña nacional en redes CDMX + MTY + GDL","Video testimonial de compradores reales. La autenticidad supera la producción costosa.","3","Publicidad Pagada","2026-11-01","2027-01-31",{owner:"Equipo Digital"}),
+  t("n3d","Podcast / serie «Invertir en México desde México»","Plusvalía, nearshoring en el Bajío y lifestyle. Invitados: economistas y empresarios.","3","Influencer & Content","2026-11-15","2027-02-28",{owner:"Contenido"}),
+  t("n3e","Espectaculares CDMX y MTY — expansión planeada","Santa Fe, Polanco, San Pedro. Una imagen, cero texto, QR al video.","3","Publicidad Pagada","2026-12-01","2027-02-15",{owner:"Equipo Digital"}),
+  t("n3f","Alianza con aviación privada — FBO y lounges","Libro de arte + QR en Signature FBO León/Silao, NetJets México, aeropuertos Toluca y MTY.","3","Partnerships","2026-10-20","2026-12-31",{nuevo:true,owner:"Alianzas"}),
+
+  // -------- Nivel 4 --------
+  t("n4a","Torneo de Golf COPARMEX en El Bosque","Tee sponsor con experiencia de preventa en hoyo 9. Conversaciones naturales de inversión.","4","Eventos","2026-10-10","2026-10-25",{owner:"Eventos"}),
+  t("n4b","Evento mujeres inversionistas — Lagos de Moreno","Las mujeres toman el 70% de las decisiones de compra. Experiencia sensorial en La Campiña.","4","Eventos","2026-09-20","2026-10-10",{owner:"Dirección MKT"}),
+  t("n4c","Evento Moms con Paulina Rivera (15K)","Comisión por resultado. Filtrar la capacidad económica real de las seguidoras.","4","Influencer & Content","2026-08-20","2026-09-10",{owner:"Contenido"}),
+  t("n4d","Alianza con clínicas estéticas y spas de lujo","Clientela con capacidad económica perfecta. Libro de arte + QR en sala de espera.","4","Partnerships","2026-09-01","2026-10-31",{owner:"Alianzas"}),
+  t("n4e","Evento macro de IA para negocios (entrada de pago)","Buen alcance. Solo si se filtra el perfil: dueños de empresa, no empleados.","4","Eventos","2026-11-01","2026-11-30",{owner:"Dirección MKT"}),
+  t("n4f","Showroom NAU en Torre Ponticelli","Excelente ubicación corporativa. Asegurar asesor presente y seguimiento inmediato.","4","Venta Personal","2026-08-15","2026-12-31",{owner:"Equipo Asesores"}),
+
+  // -------- Nivel 5 (revisar / eliminar) --------
+  t("n5a","Publicidad en periódico AM","Audiencia masiva sin calificación. Reasignar presupuesto a LinkedIn Ads.","5","Publicidad Pagada","2026-07-01","2026-07-15",{status:"review",owner:"Dirección MKT"}),
+  t("n5b","Guardias esperando visitas espontáneas","Es el último eslabón, no una estrategia. Solo útil si hay tráfico activo dirigido.","5","Venta Personal","2026-07-01","2026-07-15",{status:"review",owner:"Equipo Asesores"}),
+  t("n5c","Revista Aire de Aeroméxico ($250K/página)","Costo altísimo, alcance no segmentado. Un evento privado en sala VIP genera mejores leads.","5","Publicidad Pagada","2026-07-01","2026-07-15",{status:"review",owner:"Dirección MKT"}),
+  t("n5d","Folletos impresos por asesores","El libro de arte cumple esta función de forma superior. Eliminar folletos.","5","Publicidad Pagada","2026-07-01","2026-07-15",{status:"review",owner:"Equipo Asesores"}),
+  t("n5e","Redes sociales con bajo engagement","Eventos wellness atraen público incorrecto. Migrar a lifestyle + datos de inversión.","5","Publicidad Orgánica","2026-07-01","2026-07-15",{status:"review",owner:"Contenido"}),
+];
+
+/* ----------------------------- persistence ----------------------------- */
+const LS_KEY = "gantt-innova-v1";
+const load = () => { try { const r = localStorage.getItem(LS_KEY); if(!r) return null;
+  const p = JSON.parse(r); return Array.isArray(p) && p.length ? p : null; } catch(e){ return null; } };
+const save = (tasks) => { try { localStorage.setItem(LS_KEY, JSON.stringify(tasks)); } catch(e){} };
+
+const PX = { trimestre: 5, mes: 11, semana: 30 };
+const colorOf = (task, groupBy) => groupBy === "nivel"
+  ? (NIVELES[task.nivel]?.hex || "#888") : (CANALES[task.canal]?.hex || "#888");
+
+/* ----------------------------- small components ----------------------------- */
+function Seg({ value, onChange, options }){
+  return (
+    <div className="seg" role="group">
+      {options.map(o => (
+        <button key={o.v} aria-pressed={value===o.v} onClick={()=>onChange(o.v)}>{o.l}</button>
+      ))}
+    </div>
+  );
+}
+
+function Drawer({ task, onChange, onClose, onDelete }){
+  if(!task) return null;
+  const start = parse(task.start), end = parse(task.end);
+  const dur = diffDays(start,end)+1;
+  const set = (k,v)=> onChange({ ...task, [k]: v });
+  const band = NIVELES[task.nivel]?.hex || "#888";
+  return (
+    <React.Fragment>
+      <div className="scrim" onClick={onClose} />
+      <aside className="drawer" role="dialog" aria-label="Editar acción">
+        <header>
+          <div className="dband" style={{ background: band }} />
+          <h3>{task.name || "Acción sin título"}</h3>
+          <button className="btn ghost x" onClick={onClose} aria-label="Cerrar">✕</button>
+        </header>
+        <div className="dbody">
+          <div className="field">
+            <label>Acción</label>
+            <input value={task.name} onChange={e=>set("name", e.target.value)} placeholder="Nombre de la acción" />
+          </div>
+          <div className="field">
+            <label>Descripción</label>
+            <textarea value={task.detail} onChange={e=>set("detail", e.target.value)} placeholder="Detalle, racional, contexto…" />
+          </div>
+          <div className="two">
+            <div className="field">
+              <label>Nivel (ROI)</label>
+              <select value={task.nivel} onChange={e=>set("nivel", e.target.value)}>
+                {NIVEL_ORDER.map(k => <option key={k} value={k}>{NIVELES[k].label}</option>)}
+              </select>
+            </div>
+            <div className="field">
+              <label>Canal</label>
+              <select value={task.canal} onChange={e=>set("canal", e.target.value)}>
+                {CANAL_ORDER.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="two">
+            <div className="field">
+              <label>Inicio</label>
+              <input type="date" value={task.start} onChange={e=> e.target.value && set("start", e.target.value)} />
+            </div>
+            <div className="field">
+              <label>{task.milestone ? "Fecha (hito)" : "Fin"}</label>
+              <input type="date" value={task.end} onChange={e=> e.target.value && set("end", e.target.value)} disabled={task.milestone} />
+            </div>
+          </div>
+          <div className="dur">{task.milestone ? "Hito · 1 día" : `Duración: ${dur} día${dur!==1?"s":""}`}</div>
+          <div className="two">
+            <div className="field">
+              <label>Responsable</label>
+              <input value={task.owner} onChange={e=>set("owner", e.target.value)} placeholder="Responsable" />
+            </div>
+            <div className="field">
+              <label>Estatus</label>
+              <select value={task.status} onChange={e=>set("status", e.target.value)}>
+                {Object.keys(STATUS).map(s => <option key={s} value={s}>{STATUS[s].label}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="field">
+            <label>Avance</label>
+            <div className="rangerow">
+              <input type="range" min="0" max="100" step="5" value={task.progress}
+                onChange={e=>set("progress", Number(e.target.value))} />
+              <span className="pv">{task.progress}%</span>
+            </div>
+          </div>
+          <label className="check">
+            <input type="checkbox" checked={task.nuevo} onChange={e=>set("nuevo", e.target.checked)} />
+            Idea nueva (alto potencial)
+          </label>
+          <label className="check">
+            <input type="checkbox" checked={task.milestone} onChange={e=>set("milestone", e.target.checked)} />
+            Marcar como hito (punto en el tiempo)
+          </label>
+        </div>
+        <footer>
+          <button className="btn danger" onClick={()=>onDelete(task.id)}>Eliminar</button>
+          <div className="spacer" />
+          <button className="btn primary" onClick={onClose}>Listo</button>
+        </footer>
+      </aside>
+    </React.Fragment>
+  );
+}
+
+/* ----------------------------- app ----------------------------- */
+function App(){
+  const [tasks, setTasks] = useState(() => load() || SEED);
+  const [groupBy, setGroupBy] = useState("nivel");
+  const [zoom, setZoom] = useState("mes");
+  const [query, setQuery] = useState("");
+  const [statusF, setStatusF] = useState(()=> new Set());
+  const [onlyNew, setOnlyNew] = useState(false);
+  const [collapsed, setCollapsed] = useState(()=> new Set());
+  const [selId, setSelId] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  useEffect(()=> save(tasks), [tasks]);
+  useEffect(()=>{
+    const onKey = (e)=>{ if(e.key === "Escape") setSelId(null); };
+    window.addEventListener("keydown", onKey);
+    return ()=> window.removeEventListener("keydown", onKey);
+  },[]);
+  const flash = (m)=>{ setToast(m); setTimeout(()=> setToast(null), 1900); };
+
+  const ppd = PX[zoom];
+
+  /* domain from ALL tasks so the axis is stable */
+  const domain = useMemo(()=>{
+    let min = Infinity, max = -Infinity;
+    tasks.forEach(tk => { min = Math.min(min, parse(tk.start)); max = Math.max(max, parse(tk.end)); });
+    if(!isFinite(min)){ min = todayMs(); max = min + 30*MS; }
+    const s = new Date(min), e = new Date(max);
+    const start = Date.UTC(s.getUTCFullYear(), s.getUTCMonth(), 1);
+    const end = Date.UTC(e.getUTCFullYear(), e.getUTCMonth()+1, 0); // last day of month
+    return { start, end, days: diffDays(start,end)+1 };
+  }, [tasks]);
+
+  const width = domain.days * ppd;
+  const x = useCallback((ms)=> diffDays(domain.start, ms) * ppd, [domain.start, ppd]);
+
+  /* months + weeks for header / grid */
+  const months = useMemo(()=>{
+    const out = []; let y = new Date(domain.start).getUTCFullYear(), m = new Date(domain.start).getUTCMonth();
+    let cur = Date.UTC(y, m, 1);
+    while(cur <= domain.end){
+      const next = Date.UTC(y, m+1, 1);
+      const days = diffDays(cur, Math.min(next - MS, domain.end)) + 1;
+      out.push({ ms: cur, days, label: MES_ABBR[m], year: y });
+      m++; if(m>11){ m=0; y++; } cur = Date.UTC(y, m, 1);
+    }
+    return out;
+  }, [domain.start, domain.end]);
+
+  const weeks = useMemo(()=>{
+    if(ppd < 24) return [];
+    const out = []; let cur = domain.start;
+    // align to Monday
+    const dow = new Date(cur).getUTCDay(); const shift = (dow === 0 ? 1 : (8 - dow)) % 7;
+    cur += shift * MS;
+    while(cur <= domain.end){ out.push(cur); cur += 7*MS; }
+    return out;
+  }, [domain.start, domain.end, ppd]);
+
+  /* filtering */
+  const norm = (s)=> (s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+  const q = norm(query);
+  const visible = useMemo(()=> tasks.filter(tk => {
+    if(onlyNew && !tk.nuevo) return false;
+    if(statusF.size && !statusF.has(tk.status)) return false;
+    if(q && !(norm(tk.name).includes(q) || norm(tk.detail).includes(q) || norm(tk.owner).includes(q))) return false;
+    return true;
+  }), [tasks, onlyNew, statusF, q]);
+
+  /* groups */
+  const groups = useMemo(()=>{
+    const keys = groupBy === "nivel" ? NIVEL_ORDER : CANAL_ORDER;
+    return keys.map(k => {
+      const items = visible.filter(tk => (groupBy==="nivel" ? tk.nivel : tk.canal) === k)
+        .sort((a,b)=> parse(a.start) - parse(b.start));
+      if(!items.length) return null;
+      let min = Infinity, max = -Infinity;
+      items.forEach(tk => { min = Math.min(min, parse(tk.start)); max = Math.max(max, parse(tk.end)); });
+      const color = groupBy === "nivel" ? NIVELES[k].hex : CANALES[k].hex;
+      const label = groupBy === "nivel" ? NIVELES[k].label : k;
+      return { key:k, label, color, items, min, max };
+    }).filter(Boolean);
+  }, [visible, groupBy]);
+
+  /* KPIs (over ALL tasks) */
+  const kpi = useMemo(()=>{
+    const total = tasks.length;
+    const nuevas = tasks.filter(tk=>tk.nuevo).length;
+    const revisar = tasks.filter(tk=>tk.status==="review").length;
+    let wsum=0, wden=0;
+    tasks.forEach(tk=>{ if(tk.status==="review") return; const d = diffDays(parse(tk.start),parse(tk.end))+1;
+      wsum += tk.progress * d; wden += d; });
+    const avance = wden ? Math.round(wsum/wden) : 0;
+    return { total, nuevas, revisar, avance };
+  }, [tasks]);
+
+  /* ------- drag ------- */
+  const drag = useRef(null);
+  const moved = useRef(false);
+  const onMove = useCallback((e)=>{
+    const d = drag.current; if(!d) return;
+    const dd = Math.round((e.clientX - d.startX) / d.ppd);
+    if(dd !== 0) moved.current = true;
+    setTasks(ts => ts.map(tk => {
+      if(tk.id !== d.id) return tk;
+      if(d.mode === "move") return { ...tk, start: toISO(d.s + dd*MS), end: toISO(d.e + dd*MS) };
+      if(d.mode === "l"){ const ns = Math.min(d.s + dd*MS, d.e); return { ...tk, start: toISO(ns) }; }
+      if(d.mode === "r"){ const ne = Math.max(d.e + dd*MS, d.s); return { ...tk, end: toISO(ne) }; }
+      return tk;
+    }));
+  }, []);
+  const endDrag = useCallback(()=>{
+    drag.current = null;
+    window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerup", endDrag);
+    document.body.classList.remove("dragging");
+  }, [onMove]);
+  const startDrag = (e, task, mode)=>{
+    if(e.button != null && e.button !== 0) return;
+    e.preventDefault(); e.stopPropagation();
+    moved.current = false;
+    drag.current = { id:task.id, mode, startX:e.clientX, s:parse(task.start), e:parse(task.end), ppd };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", endDrag);
+    document.body.classList.add("dragging");
+  };
+  const clickBar = (id)=>{ if(moved.current){ moved.current = false; return; } setSelId(id); };
+
+  /* ------- mutations ------- */
+  const patch = (next)=> setTasks(ts => ts.map(tk => tk.id === next.id ? next : tk));
+  const del = (id)=>{ setTasks(ts => ts.filter(tk=>tk.id!==id)); setSelId(null); flash("Acción eliminada"); };
+  const addTask = ()=>{
+    const start = todayMs(); const id = "u" + Date.now().toString(36);
+    const nt = t(id, "Nueva acción", "", groupBy==="nivel" ? "1" : "1", "Eventos",
+      toISO(start), toISO(start + 7*MS), { owner:"Dirección MKT" });
+    if(groupBy === "canal") nt.canal = "Eventos";
+    setTasks(ts => [...ts, nt]); setSelId(id);
+  };
+  const toggleStatus = (s)=> setStatusF(prev => { const n = new Set(prev); n.has(s) ? n.delete(s) : n.add(s); return n; });
+  const toggleGroup = (k)=> setCollapsed(prev => { const n = new Set(prev); n.has(k) ? n.delete(k) : n.add(k); return n; });
+  const reset = ()=>{ if(confirm("¿Restablecer el plan original? Se perderán tus cambios.")){ setTasks(SEED); setSelId(null); flash("Plan restablecido"); } };
+
+  /* ------- export ------- */
+  const download = (name, text, type)=>{
+    const blob = new Blob([text], { type }); const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = name; a.click();
+    setTimeout(()=> URL.revokeObjectURL(url), 500);
+  };
+  const exportCSV = ()=>{
+    const head = ["id","accion","nivel","canal","inicio","fin","dias","avance","responsable","estatus","idea_nueva"];
+    const esc = (v)=>{ const s = String(v ?? ""); return /[",\n;]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; };
+    const rows = tasks.map(tk => [tk.id, tk.name, NIVELES[tk.nivel]?.label||tk.nivel, tk.canal, tk.start, tk.end,
+      diffDays(parse(tk.start),parse(tk.end))+1, tk.progress+"%", tk.owner, STATUS[tk.status]?.label||tk.status, tk.nuevo?"sí":"no"].map(esc).join(","));
+    download("gantt-innova.csv", [head.join(","), ...rows].join("\n"), "text/csv;charset=utf-8");
+    flash("CSV exportado");
+  };
+  const exportJSON = ()=>{ download("gantt-innova.json", JSON.stringify(tasks, null, 2), "application/json"); flash("JSON exportado"); };
+
+  const sel = tasks.find(tk => tk.id === selId) || null;
+  const tToday = todayMs();
+  const showToday = tToday >= domain.start && tToday <= domain.end;
+
+  const statusList = ["todo","doing","done","review","risk"];
+
+  return (
+    <div className="wrap">
+      <div className="mast">
+        <div className="id">
+          <div className="wordmark">Grupo <b>Innova</b></div>
+          <h1>Estrategia de Marketing</h1>
+          <div className="sub">Roadmap maestro 2026 — Gantt interactivo. Arrastra para reprogramar, edita cada acción y exporta tu plan.</div>
+        </div>
+        <div className="meta">
+          León, Guanajuato<br/>
+          <b>Plan de acción priorizado por ROI</b><br/>
+          Sprint Open House · Niveles 1–5
+        </div>
+      </div>
+
+      <div className="kpis">
+        <div className="kpi"><span className="v">{kpi.total}</span><span className="l">Acciones</span></div>
+        <div className="kpi"><span className="v">{kpi.nuevas}</span><span className="l">Ideas nuevas</span></div>
+        <div className="kpi"><span className="v">{kpi.avance}%</span><span className="l">Avance ponderado</span></div>
+        <div className="kpi"><span className="v">{kpi.revisar}</span><span className="l">A revisar</span></div>
+        <div className="kpi range"><span className="v">{`${fmtShort(domain.start)} '${String(new Date(domain.start).getUTCFullYear()).slice(2)} – ${fmtShort(domain.end)} '${String(new Date(domain.end).getUTCFullYear()).slice(2)}`}</span><span className="l">Horizonte</span></div>
+        <div className="legend">
+          {(groupBy==="nivel" ? NIVEL_ORDER.map(k=>({l:NIVELES[k].label.split(" · ")[0], c:NIVELES[k].hex}))
+            : CANAL_ORDER.map(c=>({l:c, c:CANALES[c].hex}))).map(it=>(
+            <span className="dot" key={it.l}><span className="sw" style={{background:it.c}}/>{it.l}</span>
+          ))}
+        </div>
+      </div>
+
+      <div className="toolbar">
+        <div className="search">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar acción, responsable…" />
+        </div>
+        <span className="label">Agrupar</span>
+        <Seg value={groupBy} onChange={setGroupBy} options={[{v:"nivel",l:"Nivel ROI"},{v:"canal",l:"Canal"}]} />
+        <span className="label">Zoom</span>
+        <Seg value={zoom} onChange={setZoom} options={[{v:"trimestre",l:"Trim."},{v:"mes",l:"Mes"},{v:"semana",l:"Sem."}]} />
+        <button className="chip" aria-pressed={onlyNew} onClick={()=>setOnlyNew(v=>!v)}>
+          <span className="sw" style={{background:"var(--accent)"}}/> Solo ideas nuevas
+        </button>
+        <div className="spacer" />
+        <button className="btn primary" onClick={addTask}>+ Acción</button>
+        <button className="btn" onClick={exportCSV}>CSV</button>
+        <button className="btn" onClick={exportJSON}>JSON</button>
+        <button className="btn ghost" onClick={reset}>Restablecer</button>
+      </div>
+
+      <div className="toolbar" style={{marginTop:"-4px"}}>
+        <span className="label">Estatus</span>
+        {statusList.map(s=>(
+          <button key={s} className="chip" aria-pressed={statusF.has(s)} onClick={()=>toggleStatus(s)}>
+            <span className="sw" style={{background:STATUS[s].hex}}/> {STATUS[s].label}
+          </button>
+        ))}
+        {statusF.size>0 && <button className="btn ghost" onClick={()=>setStatusF(new Set())}>Limpiar</button>}
+      </div>
+
+      <div className="gantt">
+        <div className="inner" style={{ width: `calc(var(--leftW) + ${width}px)` }}>
+          {/* gridlines + today behind everything */}
+          <div className="grid" style={{ left:"var(--leftW)", width: width }}>
+            {months.map((m,i)=> i>0 && <div key={"m"+i} className="gline month" style={{ left: x(m.ms) }} />)}
+            {weeks.map((w,i)=> <div key={"w"+i} className="gline week" style={{ left: x(w) }} />)}
+            {showToday && <div className="todayline" style={{ left: x(tToday) }} />}
+          </div>
+
+          {/* header */}
+          <div className="head">
+            <div className="corner"><span>Acción</span></div>
+            <div className="timehead" style={{ width: width }}>
+              {months.map((m,i)=>(
+                <div className="month" key={i} style={{ left: x(m.ms), width: m.days*ppd }}>
+                  <b>{m.label}</b><i>{`'${String(m.year).slice(2)}`}</i>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* groups + rows */}
+          {groups.length === 0 && (
+            <div className="empty"><b>Sin resultados</b>Ajusta la búsqueda o los filtros para ver acciones.</div>
+          )}
+          {groups.map(g => {
+            const isCol = collapsed.has(g.key);
+            return (
+              <React.Fragment key={g.key}>
+                <div className={"grp" + (isCol ? " collapsed" : "")}>
+                  <div className="gl" onClick={()=>toggleGroup(g.key)}>
+                    <span className="caret"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="m6 9 6 6 6-6"/></svg></span>
+                    <span className="gswatch" style={{ background:g.color }} />
+                    <span className="gname">{g.label}</span>
+                    <span className="gcount">{g.items.length}</span>
+                  </div>
+                  <div className="gt" style={{ width: width }}>
+                    <div className="rollup" style={{ left: x(g.min), width: Math.max((diffDays(g.min,g.max)+1)*ppd, 6), background:g.color }} />
+                  </div>
+                </div>
+                {!isCol && g.items.map(tk => {
+                  const c = colorOf(tk, groupBy);
+                  const s = parse(tk.start), e = parse(tk.end);
+                  const left = x(s);
+                  const w = Math.max((diffDays(s,e)+1)*ppd, 10);
+                  const isSel = tk.id === selId;
+                  const otherDim = groupBy === "nivel" ? tk.canal : ("N" + tk.nivel === "Nsprint" ? "Sprint" : "Nivel "+tk.nivel);
+                  return (
+                    <div className={"row" + (isSel ? " sel" : "")} key={tk.id}>
+                      <div className="rl" title={tk.detail} onClick={()=>setSelId(tk.id)}>
+                        <span className="sdot" style={{ background: STATUS[tk.status].hex }} title={STATUS[tk.status].label} />
+                        <div className="rlc">
+                          <div className="rline1">
+                            <span className="rname">{tk.name}</span>
+                            {tk.nuevo && <span className="newtag">Nuevo</span>}
+                          </div>
+                          <span className="rsub">{tk.owner} · {STATUS[tk.status].label}</span>
+                        </div>
+                      </div>
+                      <div className="rt" style={{ width: width }}>
+                        {tk.milestone ? (
+                          <React.Fragment>
+                            <div className={"mile" + (isSel?" sel":"")} style={{ left, "--c": c }}
+                              title={`${tk.name} · ${fmtLong(s)}`}
+                              onPointerDown={(e)=>startDrag(e, tk, "move")} onClick={()=>clickBar(tk.id)} />
+                            <span className="milelabel" style={{ left: left + 14 }}>{tk.name}</span>
+                          </React.Fragment>
+                        ) : (
+                          <div className={"bar" + (isSel?" sel":"") + (tk.status==="review"?" review":"")}
+                            style={{ left, width: w, "--c": c }}
+                            title={`${tk.name}\n${fmtShort(s)} – ${fmtShort(e)} · ${diffDays(s,e)+1} días\n${tk.owner} · ${STATUS[tk.status].label} · ${tk.progress}%`}
+                            onPointerDown={(e)=>startDrag(e, tk, "move")} onClick={()=>clickBar(tk.id)}>
+                            <div className="fill" style={{ width: tk.progress + "%" }} />
+                            {tk.nuevo && <span className="nu" />}
+                            {w > 46 && <span className="pct">{tk.progress}%</span>}
+                            <span className="edge l" onPointerDown={(e)=>startDrag(e, tk, "l")} />
+                            <span className="edge r" onPointerDown={(e)=>startDrag(e, tk, "r")} />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </React.Fragment>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="hint">
+        <span><kbd>Arrastra</kbd> el centro de una barra para reprogramar · <kbd>bordes</kbd> para cambiar duración</span>
+        <span><kbd>Clic</kbd> abre el editor · <kbd>Esc</kbd> cierra</span>
+        <span>Cambios guardados automáticamente en este navegador</span>
+      </div>
+
+      <Drawer task={sel} onChange={patch} onClose={()=>setSelId(null)} onDelete={del} />
+      {toast && <div className="toast">{toast}</div>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
